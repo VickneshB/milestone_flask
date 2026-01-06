@@ -159,23 +159,30 @@ def send_reset_email(user: User):
 def create_google_calendar_event(user: User, evt: Event):
     if not evt.create_calendar:
         return
+
     creds = get_google_credentials(user)
     if not creds:
         return
 
     service = build("calendar", "v3", credentials=creds)
-    start_dt, end_dt = build_calendar_times(evt.base_date, evt.timezone, evt.send_time)
 
-    # NEW: use your title rules
+    # Use actual base_date for milestones, recurring logic for base events
+    if evt.milestone_source_id is None:
+        # Base event – existing behavior
+        start_dt, end_dt = build_calendar_times(evt.base_date, evt.timezone, evt.send_time)
+    else:
+        # Milestone – use the stored absolute date
+        hour, minute = parse_hhmm_send_time(evt.send_time)
+        tz = pytz.timezone(evt.timezone)
+        start_dt = tz.localize(datetime(evt.base_date.year, evt.base_date.month, evt.base_date.day, hour, minute))
+        end_dt = start_dt + timedelta(hours=1)
+
     summary = build_calendar_title(evt)
-
     body = {
         "summary": summary,
         "start": {"dateTime": start_dt.isoformat(), "timeZone": evt.timezone},
         "end": {"dateTime": end_dt.isoformat(), "timeZone": evt.timezone},
     }
-
-    # Base events: recur yearly. Milestones: one-shot.
     if evt.milestone_source_id is None:
         body["recurrence"] = ["RRULE:FREQ=YEARLY"]
 
@@ -184,8 +191,13 @@ def create_google_calendar_event(user: User, evt: Event):
     db.session.commit()
 
 
-def update_google_calendar_event(user: User, evt: Event):
-    """Update an existing Google Calendar event if it exists; otherwise create it."""
+
+def update_google_calendar_event(user: User, evt: Event) -> None:
+    """Update an existing Google Calendar event if it exists; otherwise create it.
+
+    - Base events: recur yearly, use next occurrence (current/next year).
+    - Milestones: one‑shot on the actual stored base_date year.
+    """
     if not evt.create_calendar:
         return
 
@@ -194,29 +206,65 @@ def update_google_calendar_event(user: User, evt: Event):
         return
 
     service = build("calendar", "v3", credentials=creds)
-    start_dt, end_dt = build_calendar_times(evt.base_date, evt.timezone, evt.send_time)
 
-    # NEW: use your title rules
+    if evt.milestone_source_id is None:
+        # Base event – recurring yearly using next occurrence
+        start_dt, end_dt = build_calendar_times(evt.base_date, evt.timezone, evt.send_time)
+    else:
+        # Milestone – one-shot on the actual stored base_date
+        hour, minute = parse_hhmm_send_time(evt.send_time)
+        tz = pytz.timezone(evt.timezone)
+        start_dt = tz.localize(
+            datetime(
+                evt.base_date.year,
+                evt.base_date.month,
+                evt.base_date.day,
+                hour,
+                minute,
+            )
+        )
+        end_dt = start_dt + timedelta(hours=1)
+
     summary = build_calendar_title(evt)
-
     body = {
         "summary": summary,
-        "start": {"dateTime": start_dt.isoformat(), "timeZone": evt.timezone},
-        "end": {"dateTime": end_dt.isoformat(), "timeZone": evt.timezone},
+        "start": {
+            "dateTime": start_dt.isoformat(),
+            "timeZone": evt.timezone,
+        },
+        "end": {
+            "dateTime": end_dt.isoformat(),
+            "timeZone": evt.timezone,
+        },
     }
+
+    # Base events recur yearly; milestones are one‑shot
     if evt.milestone_source_id is None:
         body["recurrence"] = ["RRULE:FREQ=YEARLY"]
 
     if evt.google_calendar_event_id:
-        service.events().update(
-            calendarId="primary",
-            eventId=evt.google_calendar_event_id,
-            body=body,
-        ).execute()
+        # Update existing event
+        updated = (
+            service.events()
+            .update(
+                calendarId="primary",
+                eventId=evt.google_calendar_event_id,
+                body=body,
+            )
+            .execute()
+        )
+        evt.google_calendar_event_id = updated.get("id")
     else:
-        created = service.events().insert(calendarId="primary", body=body).execute()
+        # No existing event – create a new one
+        created = (
+            service.events()
+            .insert(calendarId="primary", body=body)
+            .execute()
+        )
         evt.google_calendar_event_id = created.get("id")
-        db.session.commit()
+
+    db.session.commit()
+
 
 
 def delete_google_calendar_event(user: User, evt: Event):
