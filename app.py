@@ -264,9 +264,9 @@ def get_google_credentials(user: User) -> Optional[Credentials]:
         "token": user.google_access_token,
         "refresh_token": user.google_refresh_token,
         "token_uri": "https://oauth2.googleapis.com/token",
-        "client_id": app.config["GOOGLE_CLIENT_ID"],
-        "client_secret": app.config["GOOGLE_CLIENT_SECRET"],
-        "scopes": app.config["GOOGLE_SCOPES"],
+        "client_id": Config.GOOGLE_CLIENT_ID,
+        "client_secret": Config.GOOGLE_CLIENT_SECRET,
+        "scopes": Config.GOOGLE_SCOPES,
     }
     creds = Credentials.from_authorized_user_info(creds_data)
     if not creds.valid and creds.expired and creds.refresh_token:
@@ -513,9 +513,9 @@ def create_app() -> Flask:
         token_endpoint = "https://oauth2.googleapis.com/token"
         data = {
             "code": code,
-            "client_id": app.config["GOOGLE_CLIENT_ID"],
-            "client_secret": app.config["GOOGLE_CLIENT_SECRET"],
-            "redirect_uri": app.config["GOOGLE_REDIRECT_URI"],
+            "client_id": Config.GOOGLE_CLIENT_ID,
+            "client_secret": Config.GOOGLE_CLIENT_SECRET,
+            "redirect_uri": Config.GOOGLE_REDIRECT_URI,
             "grant_type": "authorization_code",
         }
         resp = requests.post(token_endpoint, data=data)
