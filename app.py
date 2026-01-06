@@ -172,7 +172,7 @@ def create_google_calendar_event(user: User, evt: Event):
         start_dt, end_dt = build_calendar_times(evt.base_date, evt.timezone, evt.send_time)
     else:
         # Milestone – use the stored absolute date
-        hour, minute = parse_hhmm_send_time(evt.send_time)
+        hour, minute = parse_hhmm(evt.send_time)
         tz = pytz.timezone(evt.timezone)
         start_dt = tz.localize(datetime(evt.base_date.year, evt.base_date.month, evt.base_date.day, hour, minute))
         end_dt = start_dt + timedelta(hours=1)
@@ -212,7 +212,7 @@ def update_google_calendar_event(user: User, evt: Event) -> None:
         start_dt, end_dt = build_calendar_times(evt.base_date, evt.timezone, evt.send_time)
     else:
         # Milestone – one-shot on the actual stored base_date
-        hour, minute = parse_hhmm_send_time(evt.send_time)
+        hour, minute = parse_hhmm(evt.send_time)
         tz = pytz.timezone(evt.timezone)
         start_dt = tz.localize(
             datetime(
