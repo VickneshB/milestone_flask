@@ -1,200 +1,236 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <title>Login – Milestone Events</title>
-    <style>
-      * { box-sizing: border-box; }
-      body {
-        margin: 0;
-        min-height: 100vh;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-        background: radial-gradient(circle at top left, #e0f2fe 0, #f9fafb 48%, #e5e7eb 100%);
+<head>
+  <meta charset="UTF-8" />
+  <title>Login – Milestone Events</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      --page-bg: #f5f5f5;
+    }
+
+    html, body {
+      height: 100%;
+    }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+        sans-serif;
+      background: var(--page-bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .page-wrap {
+      width: 100%;
+      max-width: 400px;
+      padding: 1.5rem 1.25rem;
+      box-sizing: border-box;
+    }
+
+    .card {
+      background: #ffffff;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.16);
+      padding: 1.5rem 1.25rem 1.25rem;
+    }
+
+    h1 {
+      margin: 0 0 0.5rem 0;
+      font-size: 1.4rem;
+      text-align: center;
+    }
+
+    p.subtitle {
+      margin: 0 0 1.25rem 0;
+      font-size: 0.9rem;
+      color: #4b5563;
+      text-align: center;
+    }
+
+    form {
+      margin: 0;
+    }
+
+    .field {
+      margin-bottom: 1rem;
+    }
+
+    label {
+      display: block;
+      font-size: 0.9rem;
+      margin-bottom: 0.3rem;
+      color: #374151;
+    }
+
+    input[type="email"],
+    input[type="password"] {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 0.55rem 0.6rem;
+      border-radius: 6px;
+      border: 1px solid #d1d5db;
+      font-size: 0.95rem;
+    }
+
+    .password-row {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .password-row input[type="password"],
+    .password-row input[type="text"] {
+      flex: 1;
+    }
+
+    .toggle-password {
+      border: none;
+      background: transparent;
+      font-size: 0.8rem;
+      color: #1f2937;
+      cursor: pointer;
+      padding: 0.2rem 0.4rem;
+      white-space: nowrap;
+    }
+
+    .actions {
+      margin-top: 1.1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    button[type="submit"] {
+      width: 100%;
+      padding: 0.55rem 0.7rem;
+      border-radius: 6px;
+      border: none;
+      background: #111827;
+      color: #ffffff;
+      font-size: 0.95rem;
+      cursor: pointer;
+    }
+
+    button[type="submit"]:disabled {
+      opacity: 0.6;
+      cursor: default;
+    }
+
+    .link-row {
+      font-size: 0.85rem;
+      text-align: center;
+    }
+
+    .link-row a {
+      color: #1d4ed8;
+      text-decoration: none;
+    }
+
+    .error {
+      margin-top: 0.75rem;
+      font-size: 0.85rem;
+      color: #b00020;
+      text-align: center;
+    }
+
+    @media (min-height: 700px) {
+      .page-wrap {
+        padding-top: 2rem;
+        padding-bottom: 2rem;
       }
-      .card {
-        width: 100%;
-        max-width: 380px;
-        background: #ffffff;
-        border-radius: 12px;
-        padding: 24px 28px;
-        box-shadow:
-          0 20px 25px -5px rgba(15, 23, 42, 0.1),
-          0 10px 10px -5px rgba(15, 23, 42, 0.06);
-        border: 1px solid #e5e7eb;
-      }
-      h1 {
-        margin: 0 0 0.25rem 0;
-        font-size: 1.4rem;
-        color: #111827;
-      }
-      .subtitle {
-        margin: 0 0 1.25rem 0;
-        font-size: 0.9rem;
-        color: #6b7280;
-      }
-      label {
-        display: block;
-        margin-top: 0.75rem;
-        font-size: 0.9rem;
-        font-weight: 500;
-        color: #374151;
-      }
-      input {
-        margin-top: 0.3rem;
-        padding: 8px 10px;
-        width: 100%;
-        border-radius: 8px;
-        border: 1px solid #d1d5db;
-        font-size: 0.95rem;
-        transition: border-color 0.15s ease, box-shadow 0.15s ease;
-      }
-      input:focus {
-        outline: none;
-        border-color: #2563eb;
-        box-shadow: 0 0 0 1px #2563eb20;
-      }
-      .actions-row {
-        margin-top: 0.75rem;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 0.75rem;
-      }
-      button {
-        padding: 8px 14px;
-        border-radius: 999px;
-        border: none;
-        cursor: pointer;
-        font-size: 0.95rem;
-        font-weight: 500;
-        background: linear-gradient(135deg, #2563eb, #4f46e5);
-        color: #ffffff;
-        box-shadow: 0 10px 20px rgba(37, 99, 235, 0.25);
-        transition: transform 0.1s ease, box-shadow 0.1s ease, opacity 0.1s ease;
-      }
-      button:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 14px 24px rgba(37, 99, 235, 0.3);
-      }
-      button:active {
-        transform: translateY(0);
-        box-shadow: 0 6px 12px rgba(37, 99, 235, 0.25);
-      }
-      .link-button {
-        border: none;
-        padding: 0;
-        background: transparent;
-        color: #2563eb;
-        font-size: 0.85rem;
-        cursor: pointer;
-        text-decoration: underline;
-      }
-      .error {
-        color: #b91c1c;
-        margin-top: 0.75rem;
-        font-size: 0.9rem;
-      }
-      .success {
-        color: #15803d;
-        margin-top: 0.75rem;
-        font-size: 0.9rem;
-      }
-      .footer {
-        margin-top: 1rem;
-        font-size: 0.85rem;
-        color: #6b7280;
-        text-align: center;
-      }
-      .footer a {
-        color: #2563eb;
-        text-decoration: none;
-        font-weight: 500;
-      }
-      .footer a:hover {
-        text-decoration: underline;
-      }
-    </style>
-  </head>
-  <body>
+    }
+  </style>
+</head>
+<body>
+  <div class="page-wrap">
     <div class="card">
-      <h1>Welcome back</h1>
-      <p class="subtitle">Log in to manage milestone reminders and calendar events.</p>
-
+      <h1>Sign in</h1>
+      <p class="subtitle">
+        Log in to manage your milestone reminders.
+      </p>
       <form id="login-form">
-        <label>Email
-          <input type="email" id="login-email" required autocomplete="email">
-        </label>
-        <label>Password
-          <input type="password" id="login-password" required autocomplete="current-password">
-        </label>
-        <div class="actions-row">
-          <button type="submit">Login</button>
-          <button type="button" class="link-button" id="forgot-password-btn">
-            Forgot password?
-          </button>
+        <div class="field">
+          <label for="email">Email</label>
+          <input id="email" type="email" autocomplete="email" required />
         </div>
+
+        <div class="field">
+          <label for="password">Password</label>
+          <div class="password-row">
+            <input
+              id="password"
+              type="password"
+              autocomplete="current-password"
+              required
+            />
+            <button type="button" id="toggle-password" class="toggle-password">
+              Show
+            </button>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button type="submit" id="btn-login">Log in</button>
+          <div class="link-row">
+            <a href="/reset-password">Forgot your password?</a>
+          </div>
+          <div class="link-row">
+            Don’t have an account? <a href="/register">Create one</a>
+          </div>
+        </div>
+
+        <div id="login-status" class="error"></div>
       </form>
-      <div id="status" class="error"></div>
-
-      <div class="footer">
-        Don’t have an account?
-        <a href="/register">Create one</a>
-      </div>
     </div>
+  </div>
 
-    <script>
-      async function loginRequest(email, password) {
-        const res = await fetch("/auth/login", {
+  <script>
+    const form = document.getElementById("login-form");
+    const emailInput = document.getElementById("email");
+    const passwordInput = document.getElementById("password");
+    const statusEl = document.getElementById("login-status");
+    const btnLogin = document.getElementById("btn-login");
+    const toggleBtn = document.getElementById("toggle-password");
+
+    toggleBtn.addEventListener("click", () => {
+      const isPassword = passwordInput.type === "password";
+      passwordInput.type = isPassword ? "text" : "password";
+      toggleBtn.textContent = isPassword ? "Hide" : "Show";
+    });
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      statusEl.textContent = "";
+      btnLogin.disabled = true;
+
+      const email = emailInput.value.trim();
+      const password = passwordInput.value;
+
+      try {
+        const resp = await fetch("/auth/login", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, password })
+          body: JSON.stringify({ email, password }),
         });
-        const data = await res.json();
-        if (!res.ok) {
-          throw new Error(data.detail || res.statusText);
-        }
-        return data;
-      }
 
-      document.getElementById("login-form").addEventListener("submit", async (e) => {
-        e.preventDefault();
-        const email = document.getElementById("login-email").value.trim();
-        const password = document.getElementById("login-password").value;
-        const status = document.getElementById("status");
-        status.textContent = "";
-        try {
-          const data = await loginRequest(email, password);
-          localStorage.setItem("access_token", data.access_token);
-          window.location.href = "/events";
-        } catch (err) {
-          status.textContent = err.message;
-        }
-      });
-
-      document.getElementById("forgot-password-btn").addEventListener("click", () => {
-        const email = document.getElementById("login-email").value.trim();
-        if (!email) {
-          alert("Enter your email above first, then click Forgot password.");
+        const data = await resp.json();
+        if (!resp.ok) {
+          const msg = data && data.detail ? data.detail : "Login failed.";
+          statusEl.textContent = msg;
+          btnLogin.disabled = false;
           return;
         }
-        // This will call an endpoint you add on the backend
-        fetch("/auth/forgot-password", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email })
-        })
-          .then(async (res) => {
-            const data = await res.json().catch(() => ({}));
-            if (!res.ok) throw new Error(data.detail || res.statusText);
-            alert("If this email exists, a reset link has been sent. Please check SPAM folder too");
-          })
-          .catch((err) => {
-            alert(err.message);
-          });
-      });
-    </script>
-  </body>
+
+        localStorage.setItem("access_token", data.access_token);
+        window.location.href = "/events";
+      } catch (err) {
+        statusEl.textContent = "Network error logging in.";
+        btnLogin.disabled = false;
+      }
+    });
+  </script>
+</body>
 </html>

@@ -1,162 +1,254 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <title>Register – Milestone Events</title>
-    <style>
-      * { box-sizing: border-box; }
-      body {
-        margin: 0;
-        min-height: 100vh;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-        background: radial-gradient(circle at top left, #e0f2fe 0, #f9fafb 48%, #e5e7eb 100%);
+<head>
+  <meta charset="UTF-8" />
+  <title>Create Account – Milestone Events</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      --page-bg: #f5f5f5;
+    }
+
+    html, body {
+      height: 100%;
+    }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+        sans-serif;
+      background: var(--page-bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .page-wrap {
+      width: 100%;
+      max-width: 400px;
+      padding: 1.5rem 1.25rem;
+      box-sizing: border-box;
+    }
+
+    .card {
+      background: #ffffff;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.16);
+      padding: 1.5rem 1.25rem 1.25rem;
+    }
+
+    h1 {
+      margin: 0 0 0.5rem 0;
+      font-size: 1.4rem;
+      text-align: center;
+    }
+
+    p.subtitle {
+      margin: 0 0 1.25rem 0;
+      font-size: 0.9rem;
+      color: #4b5563;
+      text-align: center;
+    }
+
+    form {
+      margin: 0;
+    }
+
+    .field {
+      margin-bottom: 1rem;
+    }
+
+    label {
+      display: block;
+      font-size: 0.9rem;
+      margin-bottom: 0.3rem;
+      color: #374151;
+    }
+
+    input[type="email"],
+    input[type="password"] {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 0.55rem 0.6rem;
+      border-radius: 6px;
+      border: 1px solid #d1d5db;
+      font-size: 0.95rem;
+    }
+
+    .password-row {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .password-row input[type="password"],
+    .password-row input[type="text"] {
+      flex: 1;
+    }
+
+    .toggle-password {
+      border: none;
+      background: transparent;
+      font-size: 0.8rem;
+      color: #1f2937;
+      cursor: pointer;
+      padding: 0.2rem 0.4rem;
+      white-space: nowrap;
+    }
+
+    .hint {
+      font-size: 0.8rem;
+      color: #6b7280;
+      margin-top: 0.25rem;
+    }
+
+    .actions {
+      margin-top: 1.1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    button[type="submit"] {
+      width: 100%;
+      padding: 0.55rem 0.7rem;
+      border-radius: 6px;
+      border: none;
+      background: #111827;
+      color: #ffffff;
+      font-size: 0.95rem;
+      cursor: pointer;
+    }
+
+    button[type="submit"]:disabled {
+      opacity: 0.6;
+      cursor: default;
+    }
+
+    .link-row {
+      font-size: 0.85rem;
+      text-align: center;
+    }
+
+    .link-row a {
+      color: #1d4ed8;
+      text-decoration: none;
+    }
+
+    .error {
+      margin-top: 0.75rem;
+      font-size: 0.85rem;
+      color: #b00020;
+      text-align: center;
+    }
+
+    .success {
+      margin-top: 0.75rem;
+      font-size: 0.85rem;
+      color: #0a7f3f;
+      text-align: center;
+    }
+
+    @media (min-height: 700px) {
+      .page-wrap {
+        padding-top: 2rem;
+        padding-bottom: 2rem;
       }
-      .card {
-        width: 100%;
-        max-width: 380px;
-        background: #ffffff;
-        border-radius: 12px;
-        padding: 24px 28px;
-        box-shadow:
-          0 20px 25px -5px rgba(15, 23, 42, 0.1),
-          0 10px 10px -5px rgba(15, 23, 42, 0.06);
-        border: 1px solid #e5e7eb;
-      }
-      h1 {
-        margin: 0 0 0.25rem 0;
-        font-size: 1.4rem;
-        color: #111827;
-      }
-      .subtitle {
-        margin: 0 0 1.25rem 0;
-        font-size: 0.9rem;
-        color: #6b7280;
-      }
-      label {
-        display: block;
-        margin-top: 0.75rem;
-        font-size: 0.9rem;
-        font-weight: 500;
-        color: #374151;
-      }
-      input {
-        margin-top: 0.3rem;
-        padding: 8px 10px;
-        width: 100%;
-        border-radius: 8px;
-        border: 1px solid #d1d5db;
-        font-size: 0.95rem;
-        transition: border-color 0.15s ease, box-shadow 0.15s ease;
-      }
-      input:focus {
-        outline: none;
-        border-color: #2563eb;
-        box-shadow: 0 0 0 1px #2563eb20;
-      }
-      button {
-        margin-top: 1rem;
-        width: 100%;
-        padding: 8px 14px;
-        border-radius: 999px;
-        border: none;
-        cursor: pointer;
-        font-size: 0.95rem;
-        font-weight: 500;
-        background: linear-gradient(135deg, #2563eb, #4f46e5);
-        color: #ffffff;
-        box-shadow: 0 10px 20px rgba(37, 99, 235, 0.25);
-        transition: transform 0.1s ease, box-shadow 0.1s ease, opacity 0.1s ease;
-      }
-      button:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 14px 24px rgba(37, 99, 235, 0.3);
-      }
-      button:active {
-        transform: translateY(0);
-        box-shadow: 0 6px 12px rgba(37, 99, 235, 0.25);
-      }
-      .error {
-        color: #b91c1c;
-        margin-top: 0.75rem;
-        font-size: 0.9rem;
-      }
-      .success {
-        color: #15803d;
-        margin-top: 0.75rem;
-        font-size: 0.9rem;
-      }
-      .footer {
-        margin-top: 1rem;
-        font-size: 0.85rem;
-        color: #6b7280;
-        text-align: center;
-      }
-      .footer a {
-        color: #2563eb;
-        text-decoration: none;
-        font-weight: 500;
-      }
-      .footer a:hover {
-        text-decoration: underline;
-      }
-    </style>
-  </head>
-  <body>
+    }
+  </style>
+</head>
+<body>
+  <div class="page-wrap">
     <div class="card">
-      <h1>Create your account</h1>
-      <p class="subtitle">Sign up to start tracking important dates and milestones.</p>
-
+      <h1>Create account</h1>
+      <p class="subtitle">
+        Sign up to start tracking important milestones.
+      </p>
       <form id="register-form">
-        <label>Email
-          <input type="email" id="reg-email" required autocomplete="email">
-        </label>
-        <label>Password
-          <input type="password" id="reg-password" required autocomplete="new-password">
-        </label>
-        <button type="submit">Register</button>
+        <div class="field">
+          <label for="email">Email</label>
+          <input id="email" type="email" autocomplete="email" required />
+        </div>
+
+        <div class="field">
+          <label for="password">Password</label>
+          <div class="password-row">
+            <input
+              id="password"
+              type="password"
+              autocomplete="new-password"
+              required
+            />
+            <button type="button" id="toggle-password" class="toggle-password">
+              Show
+            </button>
+          </div>
+          <div class="hint">
+            Passwords longer than 72 bytes are not allowed.
+          </div>
+        </div>
+
+        <div class="actions">
+          <button type="submit" id="btn-register">Create account</button>
+          <div class="link-row">
+            Already have an account? <a href="/login">Sign in</a>
+          </div>
+        </div>
+
+        <div id="register-status" class="error"></div>
+        <div id="register-ok" class="success"></div>
       </form>
-
-      <div id="status" class="error"></div>
-      <div id="ok" class="success"></div>
-
-      <div class="footer">
-        Already have an account?
-        <a href="/login">Login</a>
-      </div>
     </div>
+  </div>
 
-    <script>
-      async function registerRequest(email, password) {
-        const res = await fetch("/auth/register", {
+  <script>
+    const form = document.getElementById("register-form");
+    const emailInput = document.getElementById("email");
+    const passwordInput = document.getElementById("password");
+    const statusEl = document.getElementById("register-status");
+    const okEl = document.getElementById("register-ok");
+    const btnRegister = document.getElementById("btn-register");
+    const toggleBtn = document.getElementById("toggle-password");
+
+    toggleBtn.addEventListener("click", () => {
+      const isPassword = passwordInput.type === "password";
+      passwordInput.type = isPassword ? "text" : "password";
+      toggleBtn.textContent = isPassword ? "Hide" : "Show";
+    });
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      statusEl.textContent = "";
+      okEl.textContent = "";
+      btnRegister.disabled = true;
+
+      const email = emailInput.value.trim();
+      const password = passwordInput.value;
+
+      try {
+        const resp = await fetch("/auth/register", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, password })
+          body: JSON.stringify({ email, password }),
         });
-        const data = await res.json();
-        if (!res.ok) {
-          throw new Error(data.detail || res.statusText);
-        }
-        return data;
-      }
 
-      document.getElementById("register-form").addEventListener("submit", async (e) => {
-        e.preventDefault();
-        const email = document.getElementById("reg-email").value.trim();
-        const password = document.getElementById("reg-password").value;
-        const status = document.getElementById("status");
-        const ok = document.getElementById("ok");
-        status.textContent = "";
-        ok.textContent = "";
-        try {
-          await registerRequest(email, password);
-          ok.textContent = "Registered successfully. You can login now.";
-        } catch (err) {
-          status.textContent = err.message;
+        const data = await resp.json();
+        if (!resp.ok) {
+          const msg = data && data.detail ? data.detail : "Registration failed.";
+          statusEl.textContent = msg;
+          btnRegister.disabled = false;
+          return;
         }
-      });
-    </script>
-  </body>
+
+        okEl.textContent = "Account created. Redirecting to login…";
+        setTimeout(() => {
+          window.location.href = "/login";
+        }, 800);
+      } catch (err) {
+        statusEl.textContent = "Network error creating account.";
+        btnRegister.disabled = false;
+      }
+    });
+  </script>
+</body>
 </html>
