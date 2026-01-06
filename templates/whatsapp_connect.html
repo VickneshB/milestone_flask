@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Connect WhatsApp</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background-color: #f5f5f7;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 960px;
+      margin: 40px auto;
+      background: #ffffff;
+      padding: 24px 28px;
+      border-radius: 10px;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+      box-sizing: border-box;
+    }
+    h1, h2 {
+      margin-top: 0;
+      color: #111827;
+    }
+    p {
+      color: #374151;
+      line-height: 1.5;
+    }
+    ol {
+      padding-left: 20px;
+      color: #374151;
+    }
+    li {
+      margin-bottom: 6px;
+    }
+    .btn {
+      display: inline-block;
+      padding: 8px 14px;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      font-weight: 500;
+      text-decoration: none;
+      font-size: 14px;
+    }
+    .btn-primary {
+      background-color: #2563eb;
+      color: #ffffff;
+    }
+    .btn-secondary {
+      background-color: #6b7280;
+      color: #ffffff;
+    }
+    .toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      gap: 12px;
+    }
+    .alert-warning {
+      background-color: #fef3c7;
+      color: #92400e;
+      padding: 10px 12px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      border: 1px solid #f59e0b;
+    }
+    label {
+      font-weight: 500;
+      display: block;
+      margin-top: 12px;
+      margin-bottom: 4px;
+    }
+    input, textarea {
+      width: 100%;
+      padding: 8px 10px;
+      border-radius: 6px;
+      border: 1px solid #d1d5db;
+      box-sizing: border-box;
+    }
+    textarea {
+      min-height: 70px;
+    }
+    form {
+      margin-top: 16px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="toolbar">
+      <a href="{{ url_for('events_page') }}" class="btn btn-secondary">Back</a>
+      <!-- This button just submits the form below via JS -->
+      <button type="button" class="btn btn-primary" onclick="document.getElementById('wa-connect-form').requestSubmit();">
+        Connect / Refresh WhatsApp
+      </button>
+    </div>
+
+    <p style="margin-bottom: 16px;">
+      To send automated WhatsApp messages from this app you must use a <strong>WhatsApp Business account</strong>, connect it to a <strong>Meta Developer app</strong>, enable the <strong>WhatsApp Cloud API</strong>, and generate a <strong>phone number ID</strong> and <strong>access token</strong>. Then enter those values below and connect. <strong>Detailed instructions can be found below</strong>.
+    </p>
+
+    <details>
+      <summary><strong>Step 1: Convert to WhatsApp Business</strong></summary>
+      <ol>
+        <li>Install the <strong>WhatsApp Business</strong> app from your app store.</li>
+        <li>Open WhatsApp Business and register with the phone number you want to use for messages.</li>
+        <li>If you already use WhatsApp with this number, follow the prompts to migrate it to WhatsApp Business.</li>
+        <li>Set your business name, category, and basic profile details.</li>
+      </ol>
+    </details>
+
+    <details>
+      <summary><strong>Step 2: Create a Meta Developer account</strong></summary>
+      <ol>
+        <li>Go to the <strong>Meta for Developers</strong> website and sign in with your Facebook / Meta account.</li>
+        <li>Accept the Developer Terms and complete any required business information.</li>
+        <li>Use the same Meta account that you want to link with your WhatsApp Business number.</li>
+      </ol>
+    </details>
+
+    <details>
+      <summary><strong>Step 3: Create an app and add WhatsApp</strong></summary>
+      <ol>
+        <li>In the Meta Developer dashboard, click <strong>“Create App”</strong>.</li>
+        <li>Select an app type that supports <strong>WhatsApp</strong> (for example “Business”).</li>
+        <li>Set an app name and complete the basic setup steps.</li>
+        <li>In the app dashboard, go to “Add products”.</li>
+        <li>Add the “WhatsApp” product to your app.</li>
+        <li>Follow the onboarding prompts to connect your WhatsApp Business account or phone number.</li>
+      </ol>
+    </details>
+
+    <details>
+      <summary><strong>Step 4: Go live and generate access credentials</strong></summary>
+      <ol>
+        <li>Configure your business details and complete any requested <strong>verification</strong> steps.</li>
+        <li>When you are ready for real traffic, switch the WhatsApp product from <strong>development</strong> mode to <strong>live</strong>.</li>
+        <li>In the WhatsApp product settings, create or use a <strong>system user</strong> and generate a permanent <strong>access token</strong>.</li>
+        <li>Note the following values: access token, WhatsApp business phone number ID, and WhatsApp business account ID.</li>
+      </ol>
+    </details>
+
+    <details>
+      <summary><strong>Step 5: Connect this app to WhatsApp (Cloud API)</strong></summary>
+      <p>
+        Use the fields below to save your <strong>WhatsApp Cloud API credentials</strong> into this application.
+      </p>
+      <ol>
+        <li>Go to <strong>developers.facebook.com</strong> and open your app.</li>
+        <li>In the left menu, click <strong>WhatsApp &gt; Getting Started</strong>.</li>
+        <li>Copy your <strong>Phone Number ID</strong> from the Getting Started page.</li>
+        <li>Click <strong>System Users</strong> &gt; your system user &gt; <strong>Generate new token</strong>, select your app and WhatsApp permissions, and copy the <strong>access token</strong>.</li>
+        <li>Paste both values into the form below and click <strong>Connect</strong>.</li>
+      </ol>
+    </details>
+
+    <form id="wa-connect-form">
+      <label for="phone_number_id">Phone Number ID</label>
+      <input type="text" id="phone_number_id" required>
+
+      <label for="access_token">Access token</label>
+      <textarea id="access_token" rows="3" required></textarea>
+    </form>
+  </div>
+
+  <script>
+    document.getElementById('wa-connect-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const phone_number_id = document.getElementById('phone_number_id').value.trim();
+      const access_token = document.getElementById('access_token').value.trim();
+
+      const token = localStorage.getItem('access_token'); // your existing auth token
+
+      if (!token) {
+        alert('Missing access token in localStorage (access_token). Please log in via the frontend first.');
+        return;
+      }
+
+      try {
+        const resp = await fetch('/api/integrations/whatsapp/connect', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token,
+          },
+          body: JSON.stringify({
+            phone_number_id: phone_number_id,
+            access_token: access_token,
+          }),
+        });
+
+        const data = await resp.json();
+        if (resp.ok && (data.whatsapp_connected === true || data.connected === true)) {
+          alert('WhatsApp connected successfully');
+          window.location.href = '/events';
+        } else {
+          alert('Failed to connect WhatsApp: ' + (data.detail || JSON.stringify(data)));
+        }
+      } catch (err) {
+        alert('Failed to connect WhatsApp: ' + err);
+      }
+    });
+  </script>
+</body>
+</html>

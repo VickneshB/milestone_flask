@@ -1,0 +1,356 @@
+<!-- templates/index.html -->
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Milestone Events</title>
+    <style>
+      body { font-family: system-ui, sans-serif; margin: 20px; }
+      h1 { margin-bottom: 0.5rem; }
+      .auth, .create-form, .events { margin-bottom: 2rem; padding: 1rem; border: 1px solid #ddd; border-radius: 4px; }
+      label { display: block; margin-top: 0.5rem; }
+      input, select { padding: 4px 6px; width: 100%; max-width: 320px; }
+      button { margin-top: 0.5rem; padding: 6px 10px; cursor: pointer; }
+      table { border-collapse: collapse; width: 100%; margin-top: 0.5rem; }
+      th, td { border: 1px solid #ddd; padding: 4px 6px; font-size: 0.9rem; }
+      th { background: #f5f5f5; }
+      .error { color: #b00; margin-top: 0.5rem; }
+      .success { color: #080; margin-top: 0.5rem; }
+      .hidden { display: none; }
+    </style>
+  </head>
+  <body>
+    <h1>Milestone Events</h1>
+
+    <div class="auth">
+      <h2>Auth</h2>
+      <div>
+        <h3>Register</h3>
+        <label>Email
+          <input type="email" id="reg-email">
+        </label>
+        <label>Password
+          <input type="password" id="reg-password">
+        </label>
+        <button id="btn-register">Register</button>
+      </div>
+      <div style="margin-top:1rem;">
+        <h3>Login</h3>
+        <label>Email
+          <input type="email" id="login-email">
+        </label>
+        <label>Password
+          <input type="password" id="login-password">
+        </label>
+        <button id="btn-login">Login</button>
+      </div>
+      <div id="auth-status" class="error"></div>
+      <div id="auth-ok" class="success hidden">Logged in.</div>
+    </div>
+
+    <div class="create-form hidden" id="create-section">
+      <h2>Create Event</h2>
+      <form id="create-event-form">
+        <label>Type
+          <select id="event_type">
+            <option value="birthday">Birthday</option>
+            <option value="wedding">Wedding</option>
+          </select>
+        </label>
+        <label>Name 1
+          <input type="text" id="name1">
+        </label>
+        <label>Name 2
+          <input type="text" id="name2">
+        </label>
+        <!-- <label>Phone 1
+          <input type="text" id="phone1" placeholder="+918754424301">
+        </label>
+        <label>Phone 2
+          <input type="text" id="phone2">
+        </label> -->
+        <label>Base date (YYYY-MM-DD)
+          <input type="text" id="base_date" placeholder="1995-12-28">
+        </label>
+        <label>Timezone
+          <input type="text" id="timezone" placeholder="America/Toronto">
+        </label>
+        <label>Send time (HH:MM)
+          <input type="text" id="send_time" value="00:00">
+        </label>
+        <!-- <label>Message
+          <input type="text" id="message" value="Happy Birthday">
+        </label> -->
+        <!-- <label>
+          <input type="checkbox" id="send_whatsapp" checked> Send WhatsApp
+        </label> -->
+        <label>
+          <input type="checkbox" id="create_calendar" checked> Create Calendar
+        </label>
+        <button type="submit">Create</button>
+      </form>
+      <div id="create-status" class="error"></div>
+      <div id="create-ok" class="success hidden">Event created.</div>
+    </div>
+
+    <div class="events hidden" id="events-section">
+      <h2>Upcoming Events</h2>
+      <button id="btn-refresh-upcoming">Refresh Upcoming</button>
+      <table id="upcoming-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Type</th>
+            <th>Name(s)</th>
+            <th>Base Date</th>
+            <th>Next Occurrence</th>
+            <th>Timezone</th>
+            <th>Send Time</th>
+            <!-- <th>Message</th> -->
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+
+      <h2 style="margin-top:2rem;">All Events</h2>
+      <button id="btn-refresh-all">Refresh All</button>
+      <table id="all-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Type</th>
+            <th>Name(s)</th>
+            <th>Base Date</th>
+            <th>Timezone</th>
+            <th>Send Time</th>
+            <th>Message</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <!-- Simple inline JS for demo; for larger apps, move to static/main.js -->
+    <script>
+      const API_BASE = "";
+
+      let accessToken = null;
+
+      function setAuthStatus(msg, ok=false) {
+        const errDiv = document.getElementById("auth-status");
+        const okDiv = document.getElementById("auth-ok");
+        if (ok) {
+          errDiv.textContent = "";
+          okDiv.classList.remove("hidden");
+          okDiv.textContent = msg;
+        } else {
+          okDiv.classList.add("hidden");
+          errDiv.textContent = msg || "";
+        }
+      }
+
+      function setCreateStatus(msg, ok=false) {
+        const errDiv = document.getElementById("create-status");
+        const okDiv = document.getElementById("create-ok");
+        if (ok) {
+          errDiv.textContent = "";
+          okDiv.classList.remove("hidden");
+          okDiv.textContent = msg;
+        } else {
+          okDiv.classList.add("hidden");
+          errDiv.textContent = msg || "";
+        }
+      }
+
+      async function apiRequest(path, options = {}) {
+        const headers = options.headers || {};
+        headers["Content-Type"] = headers["Content-Type"] || "application/json";
+        if (accessToken) {
+          headers["Authorization"] = "Bearer " + accessToken;
+        }
+        const res = await fetch(API_BASE + path, {
+          ...options,
+          headers
+        });
+        const text = await res.text();
+        let data = null;
+        try {
+          data = text ? JSON.parse(text) : null;
+        } catch (e) {
+          data = text;
+        }
+        if (!res.ok) {
+          const detail = data && data.detail ? data.detail : res.statusText;
+          throw new Error(detail);
+        }
+        return data;
+      }
+
+      // Auth handlers
+      document.getElementById("btn-register").addEventListener("click", async () => {
+        const email = document.getElementById("reg-email").value.trim();
+        const password = document.getElementById("reg-password").value;
+        try {
+          await apiRequest("/auth/register", {
+            method: "POST",
+            body: JSON.stringify({ email, password })
+          });
+          setAuthStatus("Registered. You can log in now.", true);
+        } catch (err) {
+          setAuthStatus(err.message);
+        }
+      });
+
+      document.getElementById("btn-login").addEventListener("click", async () => {
+        const email = document.getElementById("login-email").value.trim();
+        const password = document.getElementById("login-password").value;
+        try {
+          const data = await apiRequest("/auth/login", {
+            method: "POST",
+            body: JSON.stringify({ email, password })
+          });
+          accessToken = data.access_token;
+          setAuthStatus("Logged in.", true);
+          document.getElementById("create-section").classList.remove("hidden");
+          document.getElementById("events-section").classList.remove("hidden");
+          await loadUpcoming();
+          await loadAll();
+        } catch (err) {
+          setAuthStatus(err.message);
+        }
+      });
+
+      // Create event
+      document.getElementById("create-event-form").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const event_type = document.getElementById("event_type").value;
+        const name1 = document.getElementById("name1").value.trim();
+        const name2 = document.getElementById("name2").value.trim() || null;
+        // const phone1 = document.getElementById("phone1").value.trim();
+        // const phone2 = document.getElementById("phone2").value.trim() || null;
+        const base_date = document.getElementById("base_date").value.trim();
+        const timezone = document.getElementById("timezone").value.trim();
+        const send_time = document.getElementById("send_time").value.trim();
+        // const message = document.getElementById("message").value.trim();
+        // const send_whatsapp = document.getElementById("send_whatsapp").checked;
+        const create_calendar = document.getElementById("create_calendar").checked;
+
+        try {
+          await apiRequest("/api/events", {
+            method: "POST",
+            body: JSON.stringify({
+              event_type,
+              name1,
+              name2,
+              // phone1,
+              // phone2,
+              base_date,
+              timezone,
+              send_time,
+              // message,
+              // send_whatsapp,
+              create_calendar
+            })
+          });
+          setCreateStatus("Event created.", true);
+          await loadUpcoming();
+          await loadAll();
+        } catch (err) {
+          setCreateStatus(err.message);
+        }
+      });
+
+      // Load upcoming
+      async function loadUpcoming() {
+        try {
+          const data = await apiRequest("/api/events/upcoming");
+          const tbody = document.querySelector("#upcoming-table tbody");
+          tbody.innerHTML = "";
+          data.forEach(evt => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+              <td>${evt.id}</td>
+              <td>${evt.event_type}</td>
+              <td>${evt.name2 ? evt.name1 + " & " + evt.name2 : evt.name1}</td>
+              <td>${evt.base_date}</td>
+              <td>${evt.next_occurrence || ""}</td>
+              <td>${evt.timezone}</td>
+              <td>${evt.send_time}</td>
+              <td>${evt.message || ""}</td>
+              <td>
+                <button data-id="${evt.id}" class="btn-edit">Edit</button>
+                <button data-id="${evt.id}" class="btn-delete">Delete</button>
+              </td>
+            `;
+            tbody.appendChild(tr);
+          });
+        } catch (err) {
+          console.error("Error loading upcoming", err);
+        }
+      }
+
+      // Load all
+      async function loadAll() {
+        try {
+          const data = await apiRequest("/api/events");
+          const tbody = document.querySelector("#all-table tbody");
+          tbody.innerHTML = "";
+          data.forEach(evt => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+              <td>${evt.id}</td>
+              <td>${evt.event_type}</td>
+              <td>${evt.name2 ? evt.name1 + " & " + evt.name2 : evt.name1}</td>
+              <td>${evt.base_date}</td>
+              <td>${evt.timezone}</td>
+              <td>${evt.send_time}</td>
+              <td>${evt.message || ""}</td>
+              <td>
+                <button data-id="${evt.id}" class="btn-edit">Edit</button>
+                <button data-id="${evt.id}" class="btn-delete">Delete</button>
+              </td>
+            `;
+            tbody.appendChild(tr);
+          });
+        } catch (err) {
+          console.error("Error loading all", err);
+        }
+      }
+
+      document.getElementById("btn-refresh-upcoming").addEventListener("click", loadUpcoming);
+      document.getElementById("btn-refresh-all").addEventListener("click", loadAll);
+
+      // Edit & delete handlers (very simple edit: prompt-based)
+      document.addEventListener("click", async (e) => {
+        if (e.target.classList.contains("btn-delete")) {
+          const id = e.target.getAttribute("data-id");
+          if (!confirm("Delete event " + id + "?")) return;
+          try {
+            await apiRequest("/api/events/" + id, { method: "DELETE" });
+            await loadUpcoming();
+            await loadAll();
+          } catch (err) {
+            alert("Delete failed: " + err.message);
+          }
+        }
+        if (e.target.classList.contains("btn-edit")) {
+          const id = e.target.getAttribute("data-id");
+          const newMessage = prompt("New message (leave empty to skip):");
+          if (newMessage === null) return;
+          try {
+            await apiRequest("/api/events/" + id, {
+              method: "PUT",
+              body: JSON.stringify({ message: newMessage })
+            });
+            await loadUpcoming();
+            await loadAll();
+          } catch (err) {
+            alert("Update failed: " + err.message);
+          }
+        }
+      });
+    </script>
+  </body>
+</html>

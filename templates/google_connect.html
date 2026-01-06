@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Connect Google Calendar</title>
+    <style>
+      body { font-family: system-ui, sans-serif; margin: 20px; }
+      button { margin-top: 0.5rem; padding: 6px 10px; cursor: pointer; }
+      .error { color: #b00; margin-top: 0.5rem; }
+      .success { color: #080; margin-top: 0.5rem; }
+    </style>
+  </head>
+  <body>
+    <h1>Connect Google Calendar</h1>
+    <p>This is a placeholder page. In the future, this will start the real Google OAuth flow.</p>
+    <button id="btn-connect-now">Mark as Connected (dev)</button>
+    <button id="btn-back">Back to Events</button>
+    <div id="status" class="error"></div>
+    <div id="ok" class="success"></div>
+
+    <script>
+      let accessToken = localStorage.getItem("access_token");
+
+      function setStatus(msg, ok=false) {
+        const errDiv = document.getElementById("status");
+        const okDiv = document.getElementById("ok");
+        if (ok) {
+          errDiv.textContent = "";
+          okDiv.textContent = msg;
+        } else {
+          okDiv.textContent = "";
+          errDiv.textContent = msg || "";
+        }
+      }
+
+      async function apiRequest(path, options = {}) {
+        const headers = options.headers || {};
+        headers["Content-Type"] = headers["Content-Type"] || "application/json";
+        if (accessToken) {
+          headers["Authorization"] = "Bearer " + accessToken;
+        }
+        const res = await fetch(path, { ...options, headers });
+        const text = await res.text();
+        let data = null;
+        try { data = text ? JSON.parse(text) : null; } catch (e) { data = text; }
+        if (!res.ok) {
+          const detail = data && data.detail ? data.detail : res.statusText;
+          throw new Error(detail);
+        }
+        return data;
+      }
+
+      document.getElementById("btn-connect-now").addEventListener("click", async () => {
+        try {
+          await apiRequest("/api/integrations/google/connect", { method: "POST" });
+          setStatus("Google Calendar marked as connected for this user.", true);
+          setTimeout(() => { window.location.href = "/events"; }, 700);
+        } catch (err) {
+          setStatus(err.message);
+        }
+      });
+
+      document.getElementById("btn-back").addEventListener("click", () => {
+        window.location.href = "/events";
+      });
+    </script>
+  </body>
+</html>

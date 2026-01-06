@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>View Event – Milestone Events</title>
+  <style>
+    :root {
+      --page-bg: #f5f5f5; /* default */
+    }
+
+    html, body {
+      height: 100%;
+    }
+
+    html {
+      background: var(--page-bg); /* theme background */
+    }
+
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+        sans-serif;
+      margin: 0;
+      padding: 0;
+      background: transparent; /* let html show the theme color */
+    }
+
+    header {
+      background: #333;
+      color: white;
+      padding: 0.75rem 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    header .left {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+    }
+    header .right {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+    }
+    header a {
+      color: #ffd700;
+      text-decoration: none;
+      font-weight: 500;
+    }
+    main {
+      padding: 1rem;
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+    h1 {
+      margin-bottom: 0.5rem;
+    }
+    .panel {
+      background: white;
+      padding: 1rem;
+      margin-bottom: 1rem;
+      border-radius: 4px;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+    }
+    .panel h2 {
+      margin-top: 0;
+    }
+    .field-row {
+      margin-bottom: 0.5rem;
+      font-size: 0.95rem;
+    }
+    .field-label {
+      font-weight: 600;
+      color: #374151;
+      display: inline-block;
+      min-width: 160px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+      margin-top: 0.5rem;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 0.4rem 0.5rem;
+      text-align: left;
+    }
+    th {
+      background: #f2f2f2;
+    }
+    .highlight {
+      background: #fef3c7;
+    }
+    button {
+      padding: 0.45rem 0.9rem;
+      border-radius: 4px;
+      border: none;
+      background: #333;
+      color: white;
+      font-size: 0.9rem;
+      cursor: pointer;
+    }
+    button.secondary {
+      background: #555;
+    }
+    button.danger {
+      background: #b00020;
+    }
+    .actions-bar {
+      margin-top: 0.75rem;
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+    .error {
+      color: #b00020;
+      margin-top: 0.5rem;
+      font-size: 0.9rem;
+    }
+    /* Modal */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.4);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+    .modal {
+      background: #ffffff;
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      box-shadow: 0 10px 25px rgba(15, 23, 42, 0.25);
+      max-width: 400px;
+      width: 100%;
+    }
+    .modal h3 {
+      margin-top: 0;
+      margin-bottom: 0.5rem;
+      font-size: 1.05rem;
+    }
+    .modal p {
+      margin: 0.25rem 0 0.75rem 0;
+      font-size: 0.9rem;
+    }
+    .modal-buttons {
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.5rem;
+      margin-top: 0.5rem;
+    }
+    .btn-text {
+      background: transparent;
+      border: none;
+      color: #1f2937;
+      padding: 0.45rem 0.9rem;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="left">
+      <a href="/events">Create Event</a>
+      <a href="/events/all">All Events</a>
+    </div>
+    <div class="right">
+      <a href="/change-password">Change Password</a>
+      <a href="/login">Logout</a>
+    </div>
+  </header>
+
+  <main>
+    <h1>Event details</h1>
+    <p style="margin: 0 0 0.75rem 0; color:#4b5563; max-width: 720px;">
+      View the base event and all milestone events created from it.
+    </p>
+
+    <div class="panel">
+      <h2>Base event</h2>
+      <div id="base-fields"></div>
+      <div class="actions-bar">
+        <button id="btn-edit">Edit</button>
+        <button id="btn-delete" class="danger">Delete</button>
+        <button id="btn-back" class="secondary">Back</button>
+      </div>
+      <div id="view-status" class="error"></div>
+    </div>
+
+    <div class="panel" id="milestones-panel" style="display:none;">
+      <h2>Milestone events</h2>
+      <table id="milestones-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Name</th>
+            <th>Base Date</th>
+            <th>Days from Base</th>
+            <th>Timezone</th>
+            <th>Send Time</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <div id="milestones-status" class="error"></div>
+    </div>
+  </main>
+
+  <!-- Delete choice modal -->
+  <div id="delete-modal-backdrop" class="modal-backdrop">
+    <div class="modal">
+      <h3>Delete event</h3>
+      <p>Do you want to delete only this milestone, or the entire event with all milestones?</p>
+      <div class="modal-buttons">
+        <button id="btn-modal-cancel" class="btn-text">Cancel</button>
+        <button id="btn-modal-delete-milestone" class="secondary">Delete milestone only</button>
+        <button id="btn-modal-delete-entire" class="danger">Delete entire event</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const accessToken = localStorage.getItem("access_token") || "";
+    const eventId = {{ event_id|int }};
+
+    let isMilestoneView = false;   // true if requested_event_id != base id
+    let baseEventId = null;        // base event id for this chain
+
+    function ensureLoggedIn() {
+      if (!accessToken) {
+        window.location.href = "/login";
+      }
+    }
+
+    async function apiRequest(path, options = {}) {
+      const headers = options.headers || {};
+      headers["Content-Type"] = headers["Content-Type"] || "application/json";
+      if (accessToken) {
+        headers["Authorization"] = "Bearer " + accessToken;
+      }
+      const res = await fetch(path, { ...options, headers });
+      const text = await res.text();
+      let data = null;
+      try { data = text ? JSON.parse(text) : null; } catch (e) { data = text; }
+      if (!res.ok) {
+        const detail = data && data.detail ? data.detail : res.statusText;
+        throw new Error(detail);
+      }
+      return data;
+    }
+
+    async function loadTheme() {
+      if (!accessToken) {
+        document.documentElement.style.setProperty("--page-bg", "#f5f5f5");
+        return;
+      }
+      try {
+        const me = await apiRequest("/api/me");
+        const theme = me.theme_color || "#f5f5f5";
+        document.documentElement.style.setProperty("--page-bg", theme);
+      } catch (e) {
+        document.documentElement.style.setProperty("--page-bg", "#f5f5f5");
+      }
+    }
+
+    function showDeleteModal() {
+      document.getElementById("delete-modal-backdrop").style.display = "flex";
+    }
+    function hideDeleteModal() {
+      document.getElementById("delete-modal-backdrop").style.display = "none";
+    }
+
+    async function loadEvent() {
+      const baseFields = document.getElementById("base-fields");
+      const milestonesTbody = document.querySelector("#milestones-table tbody");
+      const viewStatus = document.getElementById("view-status");
+      const milestonesStatus = document.getElementById("milestones-status");
+
+      baseFields.innerHTML = "";
+      milestonesTbody.innerHTML = "";
+      viewStatus.textContent = "";
+      milestonesStatus.textContent = "";
+
+      try {
+        const evt = await apiRequest(`/api/events/${eventId}`);
+
+        baseEventId = evt.id;
+        const requestedId = evt.requested_event_id;
+        isMilestoneView = requestedId && requestedId !== evt.id;
+
+        const nameStr = evt.name2 ? `${evt.name1} & ${evt.name2}` : evt.name1;
+        const rows = [];
+
+        function formatType(t) {
+          if (!t) return "";
+          return t.charAt(0).toUpperCase() + t.slice(1).replace("_", " ");
+        }
+
+        rows.push(["Type", formatType(evt.event_type)]);
+        if (evt.title) {
+          rows.push(["Title", evt.title]);
+        }
+        rows.push(["Name(s)", nameStr]);
+        rows.push(["Base date", evt.base_date]);
+        rows.push(["Timezone", evt.timezone]);
+        rows.push(["Send time", evt.send_time]);
+        rows.push(["Create calendar event", evt.create_calendar ? "Yes" : "No"]);
+        rows.push(["Create milestones", evt.create_milestones ? "Yes" : "No"]);
+        if (Array.isArray(evt.milestone_days) && evt.milestone_days.length) {
+          rows.push(["Milestone days", evt.milestone_days.join(", ")]);
+        }
+
+        let baseHtml = "";
+        rows.forEach(([label, value]) => {
+          baseHtml += `
+            <div class="field-row">
+              <span class="field-label">${label}:</span> ${value}
+            </div>`;
+        });
+        baseFields.innerHTML = baseHtml;
+
+        const milestones = evt.milestones || [];
+        if (milestones.length > 0) {
+          document.getElementById("milestones-panel").style.display = "";
+          milestones.forEach((m, idx) => {
+            const tr = document.createElement("tr");
+            if (m.id === requestedId && m.id !== evt.id) {
+              tr.classList.add("highlight");
+            }
+            tr.innerHTML = `
+              <td>${idx + 1}</td>
+              <td>${m.name1}</td>
+              <td>${m.base_date}</td>
+              <td>${m.milestone_offset_days != null ? m.milestone_offset_days : ""}</td>
+              <td>${m.timezone}</td>
+              <td>${m.send_time}</td>
+            `;
+            milestonesTbody.appendChild(tr);
+          });
+        } else {
+          document.getElementById("milestones-panel").style.display = "";
+          const tr = document.createElement("tr");
+          const td = document.createElement("td");
+          td.colSpan = 6;
+          td.textContent = "No milestone events.";
+          tr.appendChild(td);
+          milestonesTbody.appendChild(tr);
+        }
+      } catch (err) {
+        viewStatus.textContent = err.message || "Error loading event.";
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", async () => {
+      ensureLoggedIn();
+      await loadTheme();
+
+      document.getElementById("btn-edit").addEventListener("click", () => {
+        window.location.href = `/events/${eventId}/edit`;
+      });
+
+      document.getElementById("btn-back").addEventListener("click", () => {
+        window.location.href = "/events/all";
+      });
+
+      document.getElementById("btn-delete").addEventListener("click", () => {
+        if (isMilestoneView) {
+          showDeleteModal();
+        } else {
+          if (!confirm("Delete this event and all its milestones?")) return;
+          apiRequest(`/api/events/${eventId}`, { method: "DELETE" })
+            .then(() => { window.location.href = "/events/all"; })
+            .catch(err => {
+              document.getElementById("view-status").textContent =
+                err.message || "Delete failed.";
+            });
+        }
+      });
+
+      document.getElementById("btn-modal-cancel").addEventListener("click", () => {
+        hideDeleteModal();
+      });
+
+      document.getElementById("btn-modal-delete-milestone").addEventListener("click", async () => {
+        try {
+          if (!confirm("Are you sure you want to delete ONLY this milestone event?")) return;
+          await apiRequest(`/api/events/${eventId}`, { method: "DELETE" });
+          hideDeleteModal();
+          window.location.href = "/events";
+        } catch (err) {
+          hideDeleteModal();
+          alert(err.message || "Delete failed.");
+        }
+      });
+
+      document.getElementById("btn-modal-delete-entire").addEventListener("click", async () => {
+        try {
+          if (!confirm("Are you sure you want to delete the ENTIRE event and ALL its milestones?")) return;
+          await apiRequest(`/api/events/${baseEventId}`, { method: "DELETE" });
+          hideDeleteModal();
+          window.location.href = "/events";
+        } catch (err) {
+          hideDeleteModal();
+          alert(err.message || "Delete failed.");
+        }
+      });
+
+      loadEvent();
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+{# templates/_timezone_select.html #}
+{% macro timezone_options(timezones, selected=None) %}
+  {% for tz in timezones %}
+    <option value="{{ tz }}" {% if selected == tz %}selected{% endif %}>{{ tz }}</option>
+  {% endfor %}
+{% endmacro %}

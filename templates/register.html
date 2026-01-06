@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Register – Milestone Events</title>
+    <style>
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background: radial-gradient(circle at top left, #e0f2fe 0, #f9fafb 48%, #e5e7eb 100%);
+      }
+      .card {
+        width: 100%;
+        max-width: 380px;
+        background: #ffffff;
+        border-radius: 12px;
+        padding: 24px 28px;
+        box-shadow:
+          0 20px 25px -5px rgba(15, 23, 42, 0.1),
+          0 10px 10px -5px rgba(15, 23, 42, 0.06);
+        border: 1px solid #e5e7eb;
+      }
+      h1 {
+        margin: 0 0 0.25rem 0;
+        font-size: 1.4rem;
+        color: #111827;
+      }
+      .subtitle {
+        margin: 0 0 1.25rem 0;
+        font-size: 0.9rem;
+        color: #6b7280;
+      }
+      label {
+        display: block;
+        margin-top: 0.75rem;
+        font-size: 0.9rem;
+        font-weight: 500;
+        color: #374151;
+      }
+      input {
+        margin-top: 0.3rem;
+        padding: 8px 10px;
+        width: 100%;
+        border-radius: 8px;
+        border: 1px solid #d1d5db;
+        font-size: 0.95rem;
+        transition: border-color 0.15s ease, box-shadow 0.15s ease;
+      }
+      input:focus {
+        outline: none;
+        border-color: #2563eb;
+        box-shadow: 0 0 0 1px #2563eb20;
+      }
+      button {
+        margin-top: 1rem;
+        width: 100%;
+        padding: 8px 14px;
+        border-radius: 999px;
+        border: none;
+        cursor: pointer;
+        font-size: 0.95rem;
+        font-weight: 500;
+        background: linear-gradient(135deg, #2563eb, #4f46e5);
+        color: #ffffff;
+        box-shadow: 0 10px 20px rgba(37, 99, 235, 0.25);
+        transition: transform 0.1s ease, box-shadow 0.1s ease, opacity 0.1s ease;
+      }
+      button:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 14px 24px rgba(37, 99, 235, 0.3);
+      }
+      button:active {
+        transform: translateY(0);
+        box-shadow: 0 6px 12px rgba(37, 99, 235, 0.25);
+      }
+      .error {
+        color: #b91c1c;
+        margin-top: 0.75rem;
+        font-size: 0.9rem;
+      }
+      .success {
+        color: #15803d;
+        margin-top: 0.75rem;
+        font-size: 0.9rem;
+      }
+      .footer {
+        margin-top: 1rem;
+        font-size: 0.85rem;
+        color: #6b7280;
+        text-align: center;
+      }
+      .footer a {
+        color: #2563eb;
+        text-decoration: none;
+        font-weight: 500;
+      }
+      .footer a:hover {
+        text-decoration: underline;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <h1>Create your account</h1>
+      <p class="subtitle">Sign up to start tracking important dates and milestones.</p>
+
+      <form id="register-form">
+        <label>Email
+          <input type="email" id="reg-email" required autocomplete="email">
+        </label>
+        <label>Password
+          <input type="password" id="reg-password" required autocomplete="new-password">
+        </label>
+        <button type="submit">Register</button>
+      </form>
+
+      <div id="status" class="error"></div>
+      <div id="ok" class="success"></div>
+
+      <div class="footer">
+        Already have an account?
+        <a href="/login">Login</a>
+      </div>
+    </div>
+
+    <script>
+      async function registerRequest(email, password) {
+        const res = await fetch("/auth/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password })
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.detail || res.statusText);
+        }
+        return data;
+      }
+
+      document.getElementById("register-form").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const email = document.getElementById("reg-email").value.trim();
+        const password = document.getElementById("reg-password").value;
+        const status = document.getElementById("status");
+        const ok = document.getElementById("ok");
+        status.textContent = "";
+        ok.textContent = "";
+        try {
+          await registerRequest(email, password);
+          ok.textContent = "Registered successfully. You can login now.";
+        } catch (err) {
+          status.textContent = err.message;
+        }
+      });
+    </script>
+  </body>
+</html>
