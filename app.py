@@ -246,10 +246,10 @@ def require_user() -> User:
 
 def build_google_auth_url(state: str) -> str:
     params = {
-        "client_id": app.config["GOOGLE_CLIENT_ID"],
-        "redirect_uri": app.config["GOOGLE_REDIRECT_URI"],
+        "client_id": Config.GOOGLE_CLIENT_ID,
+        "redirect_uri": Config.GOOGLE_REDIRECT_URI,
         "response_type": "code",
-        "scope": " ".join(app.config["GOOGLE_SCOPES"]),
+        "scope": " ".join(Config.GOOGLE_SCOPES),
         "access_type": "offline",
         "include_granted_scopes": "true",
         "state": state,
