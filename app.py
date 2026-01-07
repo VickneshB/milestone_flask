@@ -462,6 +462,10 @@ def create_app() -> Flask:
     def change_password_page():
         return render_template("change_password.html")
 
+    @app.route("/forgot-password", methods=["GET"])
+    def forgot_password_page():
+        return render_template("forgot_password.html")
+
     # ---------- Auth API ----------
 
     @app.route("/auth/register", methods=["POST"])
