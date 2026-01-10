@@ -208,7 +208,6 @@
     </div>
   </main>
 
-  <!-- Delete choice modal -->
   <div id="delete-modal-backdrop" class="modal-backdrop">
     <div class="modal">
       <h3>Delete event</h3>
@@ -298,16 +297,27 @@
           return t.charAt(0).toUpperCase() + t.slice(1).replace("_", " ");
         }
 
+        // --- 1. Fix Timezone Drift for Base Date ---
+        const bDate = new Date(evt.base_date + "T00:00:00");
+        const now = new Date();
+        now.setHours(0, 0, 0, 0);
+        
+        // Accurate Days Since (Removed color logic as requested)
+        const diff = Math.round((now - bDate) / (1000 * 60 * 60 * 24));
+        let daysHtml = `${diff}`; 
+
         rows.push(["Type", formatType(evt.event_type)]);
         if (evt.title) {
           rows.push(["Title", evt.title]);
         }
         rows.push(["Name(s)", nameStr]);
         rows.push(["Base date", evt.base_date]);
+        rows.push(["Days since base date", daysHtml]);
         rows.push(["Timezone", evt.timezone]);
         rows.push(["Send time", evt.send_time]);
         rows.push(["Create calendar event", evt.create_calendar ? "Yes" : "No"]);
         rows.push(["Create milestones", evt.create_milestones ? "Yes" : "No"]);
+        
         if (Array.isArray(evt.milestone_days) && evt.milestone_days.length) {
           rows.push(["Milestone days", evt.milestone_days.join(", ")]);
         }
@@ -321,14 +331,38 @@
         });
         baseFields.innerHTML = baseHtml;
 
+        // --- 2. Milestone Table Logic with Row Highlighting ---
         const milestones = evt.milestones || [];
         if (milestones.length > 0) {
           document.getElementById("milestones-panel").style.display = "";
+          
           milestones.forEach((m, idx) => {
+            // 1. Calculate Days To Go
+            const mDate = new Date(m.base_date + "T00:00:00");
+            mDate.setHours(0, 0, 0, 0);
+            const daysToGo = Math.round((mDate - now) / (1000 * 60 * 60 * 24));
+
+            // 2. SKIP this milestone if it passed yesterday or earlier
+            if (daysToGo < 0) {
+              return; // This skips the current iteration (effectively removing it from the list)
+            }
+
             const tr = document.createElement("tr");
+            
+            // 3. Apply Coloring Logic (Green for Today, Orange for < 15 days)
+            if (daysToGo === 0) {
+                tr.style.backgroundColor = "#c6efce"; // Green
+                tr.style.color = "#006100";
+            } else if (daysToGo > 0 && daysToGo < 15) {
+                tr.style.backgroundColor = "#ffeb9c"; // Orange
+                tr.style.color = "#9c6500";
+            }
+
             if (m.id === requestedId && m.id !== evt.id) {
               tr.classList.add("highlight");
+              tr.style.border = "2px solid #333"; 
             }
+
             tr.innerHTML = `
               <td>${idx + 1}</td>
               <td>${m.name1}</td>
@@ -339,6 +373,11 @@
             `;
             milestonesTbody.appendChild(tr);
           });
+          
+          // If all milestones were filtered out because they are in the past
+          if (milestonesTbody.children.length === 0) {
+             milestonesTbody.innerHTML = "<tr><td colspan='6'>No upcoming milestones.</td></tr>";
+          }
         } else {
           document.getElementById("milestones-panel").style.display = "";
           const tr = document.createElement("tr");

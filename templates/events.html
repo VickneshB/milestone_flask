@@ -343,7 +343,6 @@
 <body>
   <header>
     <div class="left">
-      <!-- <a href="/events">Events</a> -->
       <a href="/events/all">All Events</a>
       <button type="button" id="btn-theme" class="btn-link">Theme</button>
     </div>
@@ -468,6 +467,8 @@
             <th>Next Occurrence</th>
             <th>Timezone</th>
             <th>Send Time</th>
+            <th>Days Since Base</th>
+            <th>Days To Go</th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -730,7 +731,7 @@
         if (!Array.isArray(data) || data.length === 0) {
           const tr = document.createElement("tr");
           const td = document.createElement("td");
-          td.colSpan = 7;
+          td.colSpan = 8;
           td.textContent = "No upcoming events.";
           tr.appendChild(td);
           tbody.appendChild(tr);
@@ -751,11 +752,18 @@
           const tr = document.createElement("tr");
 
           const tdName = document.createElement("td");
-          const names = evt.name2 ? `${evt.name1} & ${evt.name2}` : evt.name1;
-          tdName.textContent = names;
+          tdName.textContent = evt.name2 ? `${evt.name1} & ${evt.name2}` : evt.name1;
 
+          // --- 1. Fix Base Date Column (Show Parent Date) ---
+          const parentDateObj = new Date(evt.next_occurrence + "T00:00:00");
+          parentDateObj.setDate(parentDateObj.getDate() - (evt.milestone_offset_days || 0));
+          
+          const bYear  = parentDateObj.getFullYear();
+          const bMonth = String(parentDateObj.getMonth() + 1).padStart(2, "0");
+          const bDay   = String(parentDateObj.getDate()).padStart(2, "0");
+          
           const tdBase = document.createElement("td");
-          tdBase.textContent = evt.base_date;
+          tdBase.textContent = `${bYear}-${bMonth}-${bDay}`;
 
           const tdNext = document.createElement("td");
           tdNext.textContent = evt.next_occurrence;
@@ -766,11 +774,53 @@
           const tdTime = document.createElement("td");
           tdTime.textContent = evt.send_time;
 
+          // --- 2. Days Since Base & Days To Go Calculation ---
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+
+          const nextDate = new Date(evt.next_occurrence + "T00:00:00");
+          nextDate.setHours(0, 0, 0, 0);
+          
+          const daysToGo = Math.round((nextDate - today) / (1000 * 60 * 60 * 24));
+          const tdDaysToGo = document.createElement("td");
+          tdDaysToGo.textContent = daysToGo === 0 ? "Today" : daysToGo;
+
+          const daysSince = Math.round((today - parentDateObj) / (1000 * 60 * 60 * 24));
+          const tdDaysSince = document.createElement("td");
+          tdDaysSince.textContent = daysSince;
+
+          // --- 3. Milestone Text Coloring ---
+          const mList = [100, 500, 1000, 2500, 5000, 10000, 15000, 20000, 25000, 30000];
+          if (mList.includes(daysSince)) {
+            tdDaysSince.style.color = "#0a7f3f";
+            tdDaysSince.style.fontWeight = "bold";
+          } else {
+            for (let m of mList) {
+              if (daysSince >= (m - 14) && daysSince < m) {
+                tdDaysSince.style.color = "orange";
+                tdDaysSince.style.fontWeight = "bold";
+                break;
+              }
+            }
+          }
+
+          // --- 4. Apply Row Highlighting Logic ---
+          if (daysToGo === 0) {
+            tr.style.backgroundColor = "#c6efce"; // Light Green
+            tr.style.color = "#006100";           // Dark Green Text
+          } else if (daysToGo < 15) {
+            tr.style.backgroundColor = "#ffeb9c"; // Light Orange/Yellow
+            tr.style.color = "#9c6500";           // Dark Orange Text
+          }
+
+          // --- 5. Actions ---
           const tdActions = document.createElement("td");
           tdActions.className = "actions-cell";
+          
           const viewLink = document.createElement("a");
           viewLink.href = `/events/${evt.id}`;
           viewLink.textContent = "View";
+          viewLink.style.marginRight = "10px";
           tdActions.appendChild(viewLink);
 
           const editLink = document.createElement("a");
@@ -778,11 +828,14 @@
           editLink.textContent = "Edit";
           tdActions.appendChild(editLink);
 
+          // Append all cells
           tr.appendChild(tdName);
           tr.appendChild(tdBase);
           tr.appendChild(tdNext);
           tr.appendChild(tdTz);
           tr.appendChild(tdTime);
+          tr.appendChild(tdDaysSince);
+          tr.appendChild(tdDaysToGo);
           tr.appendChild(tdActions);
 
           tbody.appendChild(tr);

@@ -132,6 +132,7 @@
             <th>#</th>
             <th>Name(s)</th>
             <th>Base Date</th>
+            <th>Days Since</th>
             <th>Timezone</th>
             <th>Send Time</th>
             <th>Actions</th>
@@ -149,6 +150,7 @@
             <th>#</th>
             <th>Name(s)</th>
             <th>Base Date</th>
+            <th>Days Since</th>
             <th>Timezone</th>
             <th>Send Time</th>
             <th>Actions</th>
@@ -166,6 +168,7 @@
             <th>#</th>
             <th>Name(s)</th>
             <th>Base Date</th>
+            <th>Days Since</th>
             <th>Timezone</th>
             <th>Send Time</th>
             <th>Actions</th>
@@ -183,6 +186,7 @@
             <th>#</th>
             <th>Name(s)</th>
             <th>Base Date</th>
+            <th>Days Since</th>
             <th>Timezone</th>
             <th>Send Time</th>
             <th>Actions</th>
@@ -200,6 +204,7 @@
             <th>#</th>
             <th>Name(s)</th>
             <th>Base Date</th>
+            <th>Days Since</th>
             <th>Timezone</th>
             <th>Send Time</th>
             <th>Actions</th>
@@ -266,10 +271,39 @@
             const displayId = idx + 1;
             const tr = document.createElement("tr");
             const names = evt.name2 ? `${evt.name1} & ${evt.name2}` : evt.name1;
+
+            // --- 1. Fix Timezone Drift ---
+            // Force local time so Jan 6 remains Jan 6 in your local timezone
+            const bDate = new Date(evt.base_date + "T00:00:00");
+            const now = new Date();
+            now.setHours(0, 0, 0, 0);
+            
+            // --- 2. Accurate Math ---
+            // Use Math.round to ensure 2026-01-10 minus 2026-01-06 equals exactly 4
+            const diff = Math.round((now - bDate) / (1000 * 60 * 60 * 24));
+            
+            // --- 3. Highlight Text Only (No Row Background) ---
+            let daysStyle = "";
+            const mList = [100, 500, 1000, 2500, 5000, 10000, 15000, 20000, 25000, 30000];
+            
+            if (mList.includes(diff)) {
+              // Exact milestone: Green text
+              daysStyle = 'style="color: #0a7f3f; font-weight: bold;"';
+            } else {
+              for (let m of mList) {
+                if (diff >= (m - 14) && diff < m) {
+                  // Approaching milestone: Orange text
+                  daysStyle = 'style="color: orange; font-weight: bold;"';
+                  break;
+                }
+              }
+            }
+
             tr.innerHTML = `
               <td>${displayId}</td>
               <td>${names}</td>
               <td>${evt.base_date}</td>
+              <td ${daysStyle}>${diff}</td>
               <td>${evt.timezone}</td>
               <td>${evt.send_time}</td>
               <td>
