@@ -377,8 +377,8 @@
               <option value="birthday">Birthday 🎂</option>
               <option value="wedding">Wedding 👩🏻‍❤️‍👨🏻</option>
               <option value="engagement">Engagement 💍</option>
-              <option value="otherindividual">👤 Other - Individual</option>
-              <option value="othercouple">👥 Other - Couple</option>
+              <option value="other_individual">👤 Other - Individual</option>
+              <option value="other_couple">👥 Other - Couple</option>
             </select>
           </label>
         </div>
@@ -606,14 +606,14 @@
       function updateTypeDependentFields() {
         const type = eventTypeEl.value;
 
-        if (type === "otherindividual" || type === "othercouple") {
+        if (type === "other_individual" || type === "other_couple") {
           titleRow.style.display = "";
         } else {
           titleRow.style.display = "none";
           titleInput.value = "";
         }
 
-        if (type === "wedding" || type === "engagement" || type === "othercouple") {
+        if (type === "wedding" || type === "engagement" || type === "other_couple") {
           labelName1Text.textContent = "Name 1";
           rowCoupleName2.style.display = "";
         } else {
@@ -752,18 +752,23 @@
           const tr = document.createElement("tr");
 
           const tdName = document.createElement("td");
-          tdName.textContent = evt.name2 ? `${evt.name1} & ${evt.name2}` : evt.name1;
+          const names = evt.name2 ? `${evt.name1} & ${evt.name2}` : evt.name1;
+          tdName.textContent = names;
 
-          // --- 1. Fix Base Date Column (Show Parent Date) ---
-          const parentDateObj = new Date(evt.next_occurrence + "T00:00:00");
-          parentDateObj.setDate(parentDateObj.getDate() - (evt.milestone_offset_days || 0));
-          
-          const bYear  = parentDateObj.getFullYear();
-          const bMonth = String(parentDateObj.getMonth() + 1).padStart(2, "0");
-          const bDay   = String(parentDateObj.getDate()).padStart(2, "0");
-          
           const tdBase = document.createElement("td");
-          tdBase.textContent = `${bYear}-${bMonth}-${bDay}`;
+
+          // If this is a milestone, reconstruct original base date
+          if (evt.milestone_offset_days && evt.milestone_offset_days > 0 && evt.next_occurrence) {
+              const nextDate = new Date(evt.next_occurrence + "T00:00:00");
+              nextDate.setDate(nextDate.getDate() - evt.milestone_offset_days);
+
+              const year  = nextDate.getFullYear();
+              const month = String(nextDate.getMonth() + 1).padStart(2, "0");
+              const day   = String(nextDate.getDate()).padStart(2, "0");
+              tdBase.textContent = `${year}-${month}-${day}`;
+          } else {
+              tdBase.textContent = evt.base_date;
+          }
 
           const tdNext = document.createElement("td");
           tdNext.textContent = evt.next_occurrence;
@@ -774,22 +779,30 @@
           const tdTime = document.createElement("td");
           tdTime.textContent = evt.send_time;
 
-          // --- 2. Days Since Base & Days To Go Calculation ---
+          // --- Days Since Base & Days To Go Calculation ---
           const today = new Date();
           today.setHours(0, 0, 0, 0);
 
-          const nextDate = new Date(evt.next_occurrence + "T00:00:00");
-          nextDate.setHours(0, 0, 0, 0);
-          
-          const daysToGo = Math.round((nextDate - today) / (1000 * 60 * 60 * 24));
+          // 1. Days To Go
+          const nextOccurDate = new Date(evt.next_occurrence + "T00:00:00");
+          nextOccurDate.setHours(0, 0, 0, 0);
+          const daysToGo = Math.ceil((nextOccurDate - today) / (1000 * 60 * 60 * 24));
+
           const tdDaysToGo = document.createElement("td");
           tdDaysToGo.textContent = daysToGo === 0 ? "Today" : daysToGo;
 
-          const daysSince = Math.round((today - parentDateObj) / (1000 * 60 * 60 * 24));
+          // 2. Days Since Base
           const tdDaysSince = document.createElement("td");
+          const baseDate = new Date(evt.base_date + "T00:00:00");
+          baseDate.setHours(0, 0, 0, 0);
+          let daysSince = Math.floor((today - baseDate) / (1000 * 60 * 60 * 24));
+
+          if (evt.milestone_offset_days && evt.milestone_offset_days > 0) {
+              daysSince = evt.milestone_offset_days - daysToGo;
+          }
           tdDaysSince.textContent = daysSince;
 
-          // --- 3. Milestone Text Coloring ---
+          // --- COLORING LOGIC 1: Text color for milestones ---
           const mList = [100, 500, 1000, 2500, 5000, 10000, 15000, 20000, 25000, 30000];
           if (mList.includes(daysSince)) {
             tdDaysSince.style.color = "#0a7f3f";
@@ -804,19 +817,17 @@
             }
           }
 
-          // --- 4. Apply Row Highlighting Logic ---
+          // --- COLORING LOGIC 2: Row background based on proximity ---
           if (daysToGo === 0) {
             tr.style.backgroundColor = "#c6efce"; // Light Green
             tr.style.color = "#006100";           // Dark Green Text
-          } else if (daysToGo < 15) {
+          } else if (daysToGo > 0 && daysToGo < 15) {
             tr.style.backgroundColor = "#ffeb9c"; // Light Orange/Yellow
             tr.style.color = "#9c6500";           // Dark Orange Text
           }
 
-          // --- 5. Actions ---
           const tdActions = document.createElement("td");
           tdActions.className = "actions-cell";
-          
           const viewLink = document.createElement("a");
           viewLink.href = `/events/${evt.id}`;
           viewLink.textContent = "View";
@@ -828,7 +839,6 @@
           editLink.textContent = "Edit";
           tdActions.appendChild(editLink);
 
-          // Append all cells
           tr.appendChild(tdName);
           tr.appendChild(tdBase);
           tr.appendChild(tdNext);

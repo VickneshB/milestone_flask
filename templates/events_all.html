@@ -255,8 +255,8 @@
           birthday: [],
           wedding: [],
           engagement: [],
-          otherindividual: [],
-          othercouple: [],
+          other_individual: [],
+          other_couple: [],
         };
         data.forEach((evt) => {
           if (buckets[evt.event_type]) {
@@ -318,8 +318,8 @@
         renderBucket(buckets.birthday, "all-birthday-table");
         renderBucket(buckets.wedding, "all-wedding-table");
         renderBucket(buckets.engagement, "all-engagement-table");
-        renderBucket(buckets.otherindividual, "all-other-individual-table");
-        renderBucket(buckets.othercouple, "all-other-couple-table");
+        renderBucket(buckets.other_individual, "all-other-individual-table");
+        renderBucket(buckets.other_couple, "all-other-couple-table");
       } catch (err) {
         console.error("Error loading all", err);
       }

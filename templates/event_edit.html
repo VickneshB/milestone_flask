@@ -202,8 +202,8 @@
               <option value="birthday">Birthday 🎂</option>
               <option value="wedding">Wedding 👩🏻‍❤️‍👨🏻</option>
               <option value="engagement">Engagement 💍</option>
-              <option value="otherindividual">👤 Other - Individual</option>
-              <option value="othercouple">👥 Other - Couple</option>
+              <option value="other_individual">👤 Other - Individual</option>
+              <option value="other_couple">👥 Other - Couple</option>
             </select>
           </label>
         </div>
@@ -390,14 +390,14 @@
       function updateTypeDependentFields() {
         const type = eventTypeEl.value;
 
-        if (type === "otherindividual" || type === "othercouple") {
+        if (type === "other_individual" || type === "other_couple") {
           titleRow.style.display = "";
         } else {
           titleRow.style.display = "none";
           titleInput.value = "";
         }
 
-        if (type === "wedding" || type === "engagement" || type === "othercouple") {
+        if (type === "wedding" || type === "engagement" || type === "other_couple") {
           labelName1Text.textContent = "Name 1";
           rowCoupleName2.style.display = "";
         } else {
