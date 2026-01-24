@@ -173,17 +173,19 @@
       margin-top: 0.5rem;
       font-size: 0.9rem;
     }
+    #row-notifications {
+      margin-top: 0.75rem;
+    }
   </style>
 </head>
 <body>
   <header>
     <div class="left">
-      <a href="/events/all">All Events</a>
       <a href="/events">Create Event</a>
+      <a href="/events/all">All Events</a>
     </div>
     <div class="right">
-      <a href="/change-password">Change Password</a>
-      <a href="/login">Logout</a>
+      <button type="button" id="btn-settings" class="btn-link">Settings</button>
     </div>
   </header>
 
@@ -275,6 +277,33 @@
           <small>Only milestones after today will be created.</small>
         </div>
 
+        <div class="checkbox-row" id="row-notifications">
+          <label>
+            <input type="checkbox" id="createnotifications">
+            <span>Add notifications to calendar event</span>
+          </label>
+        </div>
+
+        <div id="notifications-section" style="display:none;">
+          <div class="field-row">
+            <label>Notifications for this event
+              <div class="inline-input">
+                <input type="number" id="event-notify-number" min="0" placeholder="e.g. 7">
+                <select id="event-notify-unit">
+                  <option value="minutes">Minutes</option>
+                  <option value="hours">Hours</option>
+                  <option value="days">Days</option>
+                  <option value="weeks">Weeks</option>
+                  <option value="months">Months</option>
+                </select>
+                <button type="button" id="event-notify-add" class="secondary">Add</button>
+              </div>
+              <div class="settings-tag-list" id="event-notify-tags"></div>
+              <div class="settings-small">Maximum 5 notifications per event.</div>
+            </label>
+          </div>
+        </div>
+
         <button type="submit">Save Changes</button>
         <button type="button" id="btn-cancel" class="secondary" style="margin-left:0.5rem;">Cancel</button>
       </form>
@@ -287,7 +316,20 @@
     const accessToken = localStorage.getItem("access_token") || "";
     const eventId = {{ event_id|int }};
     let googleConnected = false;
-    let milestoneDays = [100, 500, 1000, 2500, 5000, 10000, 15000, 20000, 25000, 30000];
+
+    // settings defaults
+    const DEFAULT_MILESTONE_DAYS = [100, 500, 1000, 2500, 5000, 10000, 15000, 20000, 25000, 30000];
+    let defaultMilestoneDays = DEFAULT_MILESTONE_DAYS.slice();
+    let settingsMilestoneDays = defaultMilestoneDays.slice();
+    let defaultNotifications = [
+      { value: 1, unit: "hours" },
+      { value: 2, unit: "hours" },
+      { value: 1, unit: "days" },
+      { value: 1, unit: "weeks" },
+      { value: 2, unit: "weeks" }
+    ]; // list of { value, unit }
+
+    let milestoneDays = defaultMilestoneDays.slice();
 
     async function apiRequest(path, options = {}) {
       const headers = options.headers || {};
@@ -325,6 +367,54 @@
       }
     }
 
+    let eventNotifications = defaultNotifications.slice(); // start from Settings list
+    let eventNotifyTags = null;
+    let createNotificationsEl = null;
+
+    function renderEventNotifyTags() {
+      eventNotifyTags.innerHTML = "";
+
+      const unitToMinutes = {
+        minutes: 1,
+        hours: 60,
+        days: 60 * 24,
+        weeks: 60 * 24 * 7,
+        months: 60 * 24 * 30
+      };
+
+      const sorted = eventNotifications
+        .map((n, index) => ({
+          ...n,
+          index,
+          minutes: n.value * (unitToMinutes[n.unit] || 1)
+        }))
+        .sort((a, b) => a.minutes - b.minutes);
+
+      sorted.forEach((nWrapped) => {
+        const n = nWrapped;
+        const pill = document.createElement("span");
+        pill.className = "pill";
+
+        const labelUnit =
+          n.value === 1 && n.unit.endsWith("s")
+            ? n.unit.slice(0, -1)
+            : n.unit;
+
+        pill.textContent = `${n.value} ${labelUnit}`;
+
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.textContent = "×";
+        btn.addEventListener("click", () => {
+          eventNotifications = eventNotifications.filter((_, i) => i !== n.index);
+          renderEventNotifyTags();
+        });
+
+        pill.appendChild(btn);
+        eventNotifyTags.appendChild(pill);
+      });
+    }
+
     function setupEditForm() {
       const form = document.getElementById("edit-event-form");
       const eventTypeEl = document.getElementById("eventtype");
@@ -342,9 +432,37 @@
       const milestoneInput = document.getElementById("milestone-input");
       const milestonePills = document.getElementById("milestone-pills");
       const btnAddMilestone = document.getElementById("btn-add-milestone");
+      const eventNotifyNumber = document.getElementById("event-notify-number");
+      const eventNotifyUnit = document.getElementById("event-notify-unit");
+      const eventNotifyAdd = document.getElementById("event-notify-add");
+      eventNotifyTags = document.getElementById("event-notify-tags");
       const editStatus = document.getElementById("edit-status");
       const editOk = document.getElementById("edit-ok");
       const btnCancel = document.getElementById("btn-cancel");
+
+      createNotificationsEl = document.getElementById("createnotifications");
+
+      if (createNotificationsEl) {
+        createNotificationsEl.checked = googleConnected;
+      }
+
+      const notificationsSection = document.getElementById("notifications-section");
+
+      if (createNotificationsEl) {
+        // Initial visibility
+        notificationsSection.style.display = createNotificationsEl.checked ? "" : "none";
+
+        createNotificationsEl.addEventListener("change", () => {
+          if (createNotificationsEl.checked && !googleConnected) {
+            createNotificationsEl.checked = false;
+            notificationsSection.style.display = "none";
+            alert("Google Calendar is not connected. Please connect Google Calendar first.");
+            return;
+          }
+          // Toggle section when checkbox changes
+          notificationsSection.style.display = createNotificationsEl.checked ? "" : "none";
+        });
+      }
 
       function renderMilestones() {
         milestonePills.innerHTML = "";
@@ -421,8 +539,64 @@
       });
 
       btnCancel.addEventListener("click", () => {
-        window.location.href = "/events";
+        // Prefer real browser back if there is history
+        if (window.history.length > 1) {
+          window.history.back();
+          return;
+        }
+
+        // Fallback: use referrer if it looks like one of your app pages
+        if (document.referrer && document.referrer.indexOf(window.location.origin) === 0) {
+          window.location.href = document.referrer;
+          return;
+        }
+
+        // Final fallback: All Events
+        window.location.href = "/events/all";
       });
+
+
+      if (eventNotifyAdd && eventNotifyNumber && eventNotifyUnit) {
+        eventNotifyAdd.addEventListener("click", () => {
+          const val = parseInt(eventNotifyNumber.value, 10);
+          const unit = eventNotifyUnit.value;
+          if (!isNaN(val) && val >= 0) {
+            if (eventNotifications.length >= 5) {
+              alert("You can only have up to 5 notifications per event.");
+              return;
+            }
+            const exists = eventNotifications.some((n) => n.value === val && n.unit === unit);
+            if (!exists) {
+              eventNotifications.push({ value: val, unit });
+              renderEventNotifyTags();
+            }
+            eventNotifyNumber.value = "";
+            eventNotifyUnit.value = "days";
+          }
+        });
+
+        eventNotifyNumber.addEventListener("keydown", (e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            const val = parseInt(eventNotifyNumber.value, 10);
+            const unit = eventNotifyUnit.value;
+            if (!isNaN(val) && val >= 0) {
+              if (eventNotifications.length >= 5) {
+                alert("You can only have up to 5 notifications per event.");
+                return;
+              }
+              const exists = eventNotifications.some((n) => n.value === val && n.unit === unit);
+              if (!exists) {
+                eventNotifications.push({ value: val, unit });
+                renderEventNotifyTags();
+              }
+              eventNotifyNumber.value = "";
+              eventNotifyUnit.value = "days";
+            }
+          }
+        });
+      }
+
 
       form.addEventListener("submit", async (e) => {
         e.preventDefault();
@@ -433,6 +607,8 @@
           editStatus.textContent = "You must be logged in.";
           return;
         }
+
+        const use_notifications = createNotificationsEl ? createNotificationsEl.checked : false;
 
         const payload = {
           event_type: eventTypeEl.value,
@@ -445,6 +621,7 @@
           create_milestones: createMilestonesEl.checked,
           milestone_days: milestoneDays,
           title: titleInput.value.trim() || null,
+          notifications: use_notifications ? eventNotifications : [],
         };
 
         try {
@@ -474,6 +651,20 @@
       }
       try {
         const evt = await apiRequest(`/api/events/${eventId}`);
+        if (Array.isArray(evt.notifications) && evt.notifications.length > 0) {
+          eventNotifications = evt.notifications.slice();
+          if (createNotificationsEl) createNotificationsEl.checked = true;
+        } else {
+          eventNotifications = defaultNotifications.slice();
+          if (createNotificationsEl && !googleConnected) {
+            createNotificationsEl.checked = false;
+          }
+        }
+        renderEventNotifyTags();
+        const notificationsSection = document.getElementById("notifications-section");
+        if (notificationsSection && createNotificationsEl) {
+          notificationsSection.style.display = createNotificationsEl.checked ? "" : "none";
+        }
         document.getElementById("eventtype").value = evt.event_type;
         document.getElementById("name1").value = evt.name1 || "";
         document.getElementById("name2").value = evt.name2 || "";

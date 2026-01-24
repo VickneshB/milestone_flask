@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy.dialects.postgresql import JSON
 
 db = SQLAlchemy()
 
@@ -31,7 +32,10 @@ class User(db.Model):
     reset_token = db.Column(db.String(128), nullable=True)
     reset_token_expires_at = db.Column(db.DateTime, nullable=True)
 
-    theme_color = db.Column(db.String(7), nullable=True)
+    # inside User model class, near theme_color
+    theme_color = db.Column(db.String(20), nullable=True)
+    font_color = db.Column(db.String(20), nullable=True)
+    notifications = db.Column(JSON, nullable=True)
 
 
 class Event(db.Model):
@@ -89,3 +93,5 @@ class Event(db.Model):
         backref=db.backref("milestone_parent", remote_side=[id]),
         cascade="all, delete-orphan",
     )
+
+    notifications = db.Column(JSON, nullable=True)

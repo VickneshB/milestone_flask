@@ -156,7 +156,9 @@ def send_reset_email(user: User):
 
 
 
-def create_google_calendar_event(user: User, evt: Event):
+def create_google_calendar_event(user: User, evt: Event, notifications=None):
+    if notifications is None:
+        notifications = []
     if not evt.create_calendar:
         return
 
@@ -183,6 +185,39 @@ def create_google_calendar_event(user: User, evt: Event):
         "start": {"dateTime": start_dt.isoformat(), "timeZone": evt.timezone},
         "end": {"dateTime": end_dt.isoformat(), "timeZone": evt.timezone},
     }
+    # Add custom reminders based on notifications list
+    overrides = []
+    for n in notifications:
+        try:
+            value = int(n.get("value"))
+            unit = (n.get("unit") or "").lower()
+        except Exception:
+            continue
+        if value < 0:
+            continue
+
+        # convert to minutes before event
+        if unit == "minutes":
+            minutes = value
+        elif unit == "hours":
+            minutes = value * 60
+        elif unit == "days":
+            minutes = value * 60 * 24
+        elif unit == "weeks":
+            minutes = value * 60 * 24 * 7
+        elif unit == "months":
+            minutes = value * 60 * 24 * 30
+        else:
+            continue
+
+        overrides.append({"method": "popup", "minutes": minutes})
+
+    if overrides:
+        overrides = overrides[:5]
+        body["reminders"] = {
+            "useDefault": False,
+            "overrides": overrides,
+        }
     if evt.milestone_source_id is None:
         body["recurrence"] = ["RRULE:FREQ=YEARLY"]
 
@@ -237,6 +272,41 @@ def update_google_calendar_event(user: User, evt: Event) -> None:
             "timeZone": evt.timezone,
         },
     }
+
+    # Add custom reminders based on notifications list
+    overrides = []
+    for n in notifications:
+        try:
+            value = int(n.get("value"))
+            unit = (n.get("unit") or "").lower()
+        except Exception:
+            continue
+        if value < 0:
+            continue
+
+        # convert to minutes before event
+        if unit == "minutes":
+            minutes = value
+        elif unit == "hours":
+            minutes = value * 60
+        elif unit == "days":
+            minutes = value * 60 * 24
+        elif unit == "weeks":
+            minutes = value * 60 * 24 * 7
+        elif unit == "months":
+            minutes = value * 60 * 24 * 30
+        else:
+            continue
+
+        overrides.append({"method": "popup", "minutes": minutes})
+
+    if overrides:
+        overrides = overrides[:5]
+        body["reminders"] = {
+            "useDefault": False,
+            "overrides": overrides,
+        }
+
 
     # Base events recur yearly; milestones are one‑shot
     if evt.milestone_source_id is None:
@@ -535,13 +605,13 @@ def create_app() -> Flask:
     @app.route("/api/me", methods=["GET"])
     def me():
         user = require_user()
-        return jsonify(
-            {
-                "id": user.id,
-                "email": user.email,
-                "theme_color": getattr(user, "theme_color", None),
-            }
-        )
+        return jsonify({
+            "id": user.id,
+            "email": user.email,
+            "theme_color": user.theme_color,
+            "font_color": user.font_color
+        })
+
 
     @app.route("/google/login", methods=["GET"])
     def google_login():
@@ -758,6 +828,7 @@ def create_app() -> Flask:
         create_milestones = bool(data.get("create_milestones", False))
         milestone_days = data.get("milestone_days") or []
         title = data.get("title")
+        notifications = data.get("notifications") or []
 
         valid_types = (
             "birthday",
@@ -823,6 +894,7 @@ def create_app() -> Flask:
             # message=message,
             # send_whatsapp=send_whatsapp,
             create_calendar=create_calendar,
+            notifications=notifications or None,
         )
         if hasattr(Event, "title"):
             evt.title = (title or "").strip() if event_type in (
@@ -866,6 +938,7 @@ def create_app() -> Flask:
                     create_calendar=create_calendar,
                     milestone_source_id=evt.id,
                     milestone_offset_days=offset_int,
+                    notifications=notifications or None,
                 )
                 if hasattr(Event, "title"):
                     m_evt.title = (title or "").strip() if event_type in (
@@ -877,13 +950,13 @@ def create_app() -> Flask:
         db.session.commit()
 
         if create_calendar and user.google_refresh_token:
-            create_google_calendar_event(user, evt)
-            if create_milestones:
-                milestones = Event.query.filter_by(
-                    owner_id=user.id, milestone_source_id=evt.id
-                ).all()
-                for m in milestones:
-                    create_google_calendar_event(user, m)
+            create_google_calendar_event(user, evt, notifications=notifications)
+        if create_milestones:
+            milestones = Event.query.filter_by(
+                owner_id=user.id, milestone_source_id=evt.id
+            ).all()
+            for m in milestones:
+                create_google_calendar_event(user, m, notifications=notifications)
 
         return jsonify(event_to_dto(evt).__dict__), 201
 
@@ -945,6 +1018,7 @@ def create_app() -> Flask:
         create_milestones = bool(data.get("create_milestones", False))
         milestone_days = data.get("milestone_days") or []
         title = data.get("title")  # optional, used for "Other" types
+        notifications = data.get("notifications") or []
 
         valid_types = (
             "birthday",
@@ -1011,6 +1085,7 @@ def create_app() -> Flask:
             # message=message,
             # send_whatsapp=send_whatsapp,
             create_calendar=create_calendar,
+            notifications=notifications or None,
         )
 
         # store title if you have a column for it; if not, remove this block
@@ -1071,13 +1146,13 @@ def create_app() -> Flask:
 
         # Create Google calendar events for new chain
         if create_calendar and user.google_refresh_token:
-            create_google_calendar_event(user, new_evt)
-            if create_milestones:
-                milestones = Event.query.filter_by(
-                    owner_id=user.id, milestone_source_id=new_evt.id
-                ).all()
-                for m in milestones:
-                    create_google_calendar_event(user, m)
+            create_google_calendar_event(user, new_evt, notifications=notifications)
+        if create_milestones:
+            milestones = Event.query.filter_by(
+                owner_id=user.id, milestone_source_id=new_evt.id
+            ).all()
+            for m in milestones:
+                create_google_calendar_event(user, m, notifications=notifications)
 
         return jsonify(event_to_dto(new_evt).__dict__)
 
@@ -1163,27 +1238,35 @@ def create_app() -> Flask:
     def update_me():
         user = require_user()
         data = request.get_json(force=True) or {}
+        theme_color = data.get("theme_color")
+        font_color = data.get("font_color")
 
-        if "theme_color" in data:
-            theme_color = data.get("theme_color")
-            if theme_color is None:
-                # clear theme to use default on frontend
-                user.theme_color = None
-            else:
-                theme_color = theme_color.strip()
-                # very simple validation: "#RRGGBB"
-                if not (len(theme_color) == 7 and theme_color.startswith("#")):
-                    raise BadRequest("theme_color must be in #RRGGBB format")
-                user.theme_color = theme_color
-            db.session.commit()
+        # if "theme_color" in data:
+        #     theme_color = data.get("theme_color")
+        #     if theme_color is None:
+        #         # clear theme to use default on frontend
+        #         user.theme_color = None
+        #     else:
+        #         theme_color = theme_color.strip()
+        #         # very simple validation: "#RRGGBB"
+        #         if not (len(theme_color) == 7 and theme_color.startswith("#")):
+        #             raise BadRequest("theme_color must be in #RRGGBB format")
+        #         user.theme_color = theme_color
+        #     db.session.commit()
+        if theme_color is not None:
+            user.theme_color = theme_color
 
-        return jsonify(
-            {
-                "id": user.id,
-                "email": user.email,
-                "theme_color": getattr(user, "theme_color", None),
-            }
-        )
+        if font_color is not None:
+            user.font_color = font_color
+
+        db.session.commit()
+
+        return jsonify({
+            "id": user.id,
+            "email": user.email,
+            "theme_color": user.theme_color,
+            "font_color": user.font_color
+        })
 
 
     return app

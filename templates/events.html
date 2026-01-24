@@ -6,6 +6,7 @@
   <style>
     :root {
       --page-bg: #f5f5f5; /* default */
+      --font-color: #111827;
     }
 
     html, body {
@@ -22,6 +23,7 @@
       margin: 0;
       padding: 0;
       background: transparent;     /* was #f5f5f5; make it transparent */
+      color: var(--font-color);
     }
 
     header {
@@ -169,6 +171,7 @@
     }
 
     .pill-list {
+      margin-top: 0.45rem;
       display: flex;
       flex-wrap: wrap;
       gap: 0.3rem;
@@ -337,6 +340,163 @@
       font-size: 0.9rem;
     }
 
+    /* Settings popup */
+
+    .settings-popup-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.4);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1100;
+    }
+
+    .settings-popup {
+      background: #ffffff;
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      box-shadow: 0 10px 25px rgba(15, 23, 42, 0.25);
+      max-width: 360px;
+      width: 100%;
+      font-size: 0.9rem;
+    }
+
+    .settings-popup h3 {
+      margin: 0 0 0.75rem 0;
+      font-size: 1rem;
+    }
+
+    .settings-row {
+      margin-bottom: 0.75rem;
+    }
+
+    .settings-row label {
+      font-size: 0.9rem;
+      display: block;
+      margin-bottom: 0.25rem;
+    }
+
+    .settings-inline {
+      display: flex;
+      gap: 0.4rem;
+      align-items: center;
+    }
+
+    .settings-inline input[type="number"] {
+      max-width: 120px;
+    }
+
+    .settings-popup-buttons {
+      display: flex;
+      justify-content: space-between;
+      gap: 0.5rem;
+      margin-top: 0.5rem;
+      align-items: center;
+    }
+
+    .settings-footer {
+      margin-top: 1rem;
+    }
+
+    .settings-actions-wrapper {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 0.75rem;
+    }
+
+    .settings-actions-row {
+      display: inline-flex;
+      gap: 0.75rem;
+    }
+
+    .settings-action-box {
+      display: inline-flex;
+      padding: 0.4rem 0.6rem;
+      border-radius: 6px;
+      border: 1px solid #d1d5db;
+      background: #f9fafb;
+    }
+
+    .settings-close-row {
+      display: flex;
+      justify-content: center;
+    }
+
+    .settings-tag-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.3rem;
+      margin-top: 0.25rem;
+    }
+
+    .settings-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      padding: 0.15rem 0.45rem;
+      border-radius: 999px;
+      background: #f3f4f6;
+      font-size: 0.8rem;
+    }
+
+    .settings-tag button {
+      background: transparent;
+      border: none;
+      color: #374151;
+      font-size: 0.75rem;
+      padding: 0;
+      margin: 0;
+      cursor: pointer;
+    }
+
+    .settings-small {
+      font-size: 0.78rem;
+      color: #6b7280;
+      margin-top: 0.2rem;
+    }
+
+    #row-notifications {
+      margin-top: 0.75rem;
+    }
+
+    .upcoming-header-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .upcoming-legend {
+      display: flex;
+      gap: 2.75rem;
+      margin-top: 0.75rem;
+      font-size: 0.85rem;
+      color: #4b5563;
+    }
+
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    .legend-box {
+      width: 14px;
+      height: 14px;
+      border-radius: 3px;
+      border: 1px solid rgba(0,0,0,0.1);
+    }
+
+    /* Match your row colors for today (green) and < 15 days (yellow) */
+    .legend-today {
+      background-color: #c6efce;
+    }
+
+    .legend-two-weeks {
+      background-color: #ffeb9c;
+    }
 
   </style>
 </head>
@@ -344,11 +504,9 @@
   <header>
     <div class="left">
       <a href="/events/all">All Events</a>
-      <button type="button" id="btn-theme" class="btn-link">Theme</button>
     </div>
     <div class="right">
-      <a href="/change-password">Change Password</a>
-      <a href="/login">Logout</a>
+      <button type="button" id="btn-settings" class="btn-link">Settings</button>
     </div>
   </header>
 
@@ -358,21 +516,11 @@
       Use this page to store important dates for your friends and family so the app can automatically create reminders in your calendar and keep upcoming milestones in one place.
     </p>
 
-    <div class="integrations-bar">
-      <div class="integration-block">
-        <span class="status-label">Google Calendar:</span>
-        <span id="google-status-text" class="status-text status-disconnected"></span>
-        <button type="button" class="btn-link" id="google-connect-btn">
-          Connect Google Calendar
-        </button>
-      </div>
-    </div>
-
     <div class="panel">
       <h2>Create Event</h2>
       <form id="create-event-form">
         <div class="field-row">
-          <label>Type
+          <label><b>Type</b>
             <select id="eventtype">
               <option value="birthday">Birthday 🎂</option>
               <option value="wedding">Wedding 👩🏻‍❤️‍👨🏻</option>
@@ -384,33 +532,33 @@
         </div>
 
         <div class="field-row" id="row-title" style="display:none;">
-          <label>Title
+          <label><b>Title</b>
             <input type="text" id="title">
           </label>
         </div>
 
         <div class="field-row">
-          <label><span id="label-name1-text">Name</span>
+          <label><b><span id="label-name1-text">Name</span></b>
             <input type="text" id="name1" required>
           </label>
         </div>
 
         <div class="field-row" id="row-couple-name2">
-          <label>Name 2
+          <label><b>Name 2</b>
             <input type="text" id="name2">
           </label>
         </div>
 
         <div class="field-row">
           <label>
-            <span>Base date 📅</span>
+            <span><b>Base date</b> 📅</span>
             <input type="date" id="basedate" required>
           </label>
         </div>
 
         <div class="field-row">
           <label>
-            <span>Timezone 🌍</span>
+            <span><b>Timezone</b> 🌍</span>
             <select id="timezone">
               {% for tz in TIMEZONES %}
                 <option value="{{ tz }}">{{ tz }}</option>
@@ -421,7 +569,7 @@
 
         <div class="field-row">
           <label>
-            <span>Event time ⏰ (HH:MM)</span>
+            <span><b>Event time</b> ⏰ (HH:MM)</span>
             <input type="text" id="sendtime" required value="00:00">
           </label>
         </div>
@@ -441,13 +589,40 @@
         </div>
 
         <div id="milestones-config" style="display:none; margin-top:0.5rem;">
-          <label>Milestone days from base date</label>
+          <label><b>Milestone days from base date</b></label>
           <div class="pill-list" id="milestone-pills"></div>
           <div class="inline-input">
             <input type="number" id="milestone-input" placeholder="e.g. 120">
             <button type="button" id="btn-add-milestone" class="secondary">Add</button>
           </div>
-          <small>Only milestones after today will be created.</small>
+          <div class="settings-small">Only milestones after today will be created.</div>
+        </div>
+
+        <div class="checkbox-row" id="row-notifications">
+          <label>
+            <input type="checkbox" id="createnotifications">
+            <span>Add notifications to calendar event</span>
+          </label>
+        </div>
+
+        <div id="notifications-section" style="display:none;">
+          <div class="field-row">
+            <label><b>Notifications for this event</b>
+              <div class="inline-input">
+                <input type="number" id="event-notify-number" min="0" placeholder="e.g. 7">
+                <select id="event-notify-unit">
+                  <option value="minutes">Minutes</option>
+                  <option value="hours">Hours</option>
+                  <option value="days">Days</option>
+                  <option value="weeks">Weeks</option>
+                  <option value="months">Months</option>
+                </select>
+                <button type="button" id="event-notify-add" class="secondary">Add</button>
+              </div>
+              <div class="pill-list" id="event-notify-tags"></div>
+              <div class="settings-small">Maximum 5 notifications per event.</div>
+            </label>
+          </div>
         </div>
 
         <button type="submit">Create</button>
@@ -459,10 +634,19 @@
     <div class="panel">
       <h2>Upcoming Events (next 2 months)</h2>
       <button id="btn-refresh-upcoming">Refresh Upcoming</button>
+      <div class="upcoming-legend">
+        <span class="legend-item">
+          <span class="legend-box legend-today"></span> Today
+        </span>
+        <span class="legend-item">
+          <span class="legend-box legend-two-weeks"></span> Within next two weeks
+        </span>
+      </div>
       <table id="upcoming-table">
         <thead>
           <tr>
             <th>Name(s)</th>
+            <th>Title</th>
             <th>Base Date</th>
             <th>Next Occurrence</th>
             <th>Timezone</th>
@@ -491,14 +675,108 @@
       </div>
     </div>
 
+    <!-- Settings popup -->
+    <div id="settings-popup-backdrop" class="settings-popup-backdrop">
+      <div class="settings-popup">
+        <h3>Settings</h3>
+
+        <div class="integrations-bar">
+          <div class="integration-block">
+            <span class="status-label">Google Calendar:</span>
+            <span id="google-status-text" class="status-text status-disconnected"></span>
+            <button type="button" class="btn-link" id="google-connect-btn">
+              Connect Google Calendar
+            </button>
+          </div>
+        </div>
+
+        <div class="settings-row">
+          <label>Theme colour</label>
+          <div class="settings-inline">
+            <input type="color" id="settings-theme-color">
+            <button type="button" id="settings-theme-apply" class="secondary">Apply</button>
+          </div>
+          <div class="settings-small">Updates the background theme colour.</div>
+        </div>
+
+        <div class="settings-row">
+          <label>Font colour</label>
+          <div class="settings-inline">
+            <input type="color" id="settings-font-color">
+            <button type="button" id="settings-font-apply" class="secondary">Apply</button>
+          </div>
+          <div class="settings-small">Changes font colour on this page.</div>
+        </div>
+
+        <div class="settings-row">
+          <label>Default milestone days</label>
+          <div class="settings-inline">
+            <input type="number" id="settings-milestone-input" placeholder="e.g. 100">
+            <button type="button" id="settings-milestone-add" class="secondary">Add</button>
+          </div>
+          <div class="settings-tag-list" id="settings-milestone-tags"></div>
+          <div class="settings-small">Used as defaults when creating events.</div>
+        </div>
+
+        <div class="settings-row">
+          <label>Default notifications</label>
+          <div class="settings-inline">
+            <input type="number" id="settings-notify-number" min="0" placeholder="e.g. 7">
+            <select id="settings-notify-unit">
+              <option value="minutes">Minutes</option>
+              <option value="hours">Hours</option>
+              <option value="days">Days</option>
+              <option value="weeks">Weeks</option>
+              <option value="months">Months</option>
+            </select>
+            <button type="button" id="settings-notify-add" class="secondary">Add</button>
+          </div>
+          <div class="settings-tag-list" id="settings-notify-tags"></div>
+          <div class="settings-small">Multiple notifications can be set for a single event.</div>
+        </div>
+
+        <div class="settings-footer">
+          <div class="settings-actions-wrapper">
+            <div class="settings-actions-row">
+              <span class="settings-action-box">
+                <button type="button" id="settings-reset" class="theme-btn-text">Reset to defaults</button>
+              </span>
+              <span class="settings-action-box">
+                <button type="button" id="settings-change-password" class="theme-btn-text">Change Password</button>
+              </span>
+              <span class="settings-action-box">
+                <button type="button" id="settings-logout" class="theme-btn-text">Logout</button>
+              </span>
+            </div>
+          </div>
+          <div class="settings-close-row">
+            <button type="button" id="settings-close" class="theme-btn-primary">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </main>
 
   <script>
     
     const accessToken = localStorage.getItem("access_token") || "";
     const DEFAULT_THEME = "#f5f5f5";
+    const DEFAULT_FONT = "#111827";
+    const DEFAULT_MILESTONE_DAYS = [100, 500, 1000, 2500, 5000, 10000, 15000, 20000, 25000, 30000];
 
     let googleConnected = false;
+
+    // settings defaults
+    let defaultMilestoneDays = DEFAULT_MILESTONE_DAYS.slice();
+    let settingsMilestoneDays = defaultMilestoneDays.slice();
+    let defaultNotifications = [
+      { value: 1, unit: "hours" },
+      { value: 2, unit: "hours" },
+      { value: 1, unit: "days" },
+      { value: 1, unit: "weeks" },
+      { value: 2, unit: "weeks" }
+    ]; // list of { value, unit }
 
     async function fetchIntegrationsStatus() {
       const googleStatusText = document.getElementById("google-status-text");
@@ -525,6 +803,15 @@
         const data = await resp.json();
 
         googleConnected = !!data.google_connected;
+
+        const createNotificationsEl = document.getElementById("createnotifications");
+        const notifSection = document.getElementById("notifications-section");
+        if (createNotificationsEl) {
+          createNotificationsEl.checked = googleConnected;
+        }
+        if (notifSection) {
+          notifSection.style.display = googleConnected ? "" : "none";
+        }
 
         googleStatusText.textContent = googleConnected ? "Connected" : "Not connected";
         googleStatusText.classList.toggle("status-connected", googleConnected);
@@ -560,7 +847,73 @@
       const createStatus = document.getElementById("create-status");
       const createOk = document.getElementById("create-ok");
 
-      let milestoneDays = [100, 500, 1000, 2500, 5000, 10000, 15000, 20000, 25000, 30000];
+      const createNotificationsEl = document.getElementById("createnotifications");
+
+      if (createNotificationsEl) {
+        createNotificationsEl.addEventListener("change", () => {
+          if (createNotificationsEl.checked && !googleConnected) {
+            createNotificationsEl.checked = false;
+            alert("Google Calendar is not connected. Please connect Google Calendar from Settings.");
+          }
+          // toggle visibility of notifications section
+          const notifSection = document.getElementById("notifications-section");
+          if (notifSection) {
+            notifSection.style.display = createNotificationsEl.checked ? "" : "none";
+          }
+        });
+      }
+
+      const eventNotifyNumber = document.getElementById("event-notify-number");
+      const eventNotifyUnit = document.getElementById("event-notify-unit");
+      const eventNotifyAdd = document.getElementById("event-notify-add");
+      const eventNotifyTags = document.getElementById("event-notify-tags");
+
+      let milestoneDays = defaultMilestoneDays.slice();
+      let eventNotifications = defaultNotifications.slice(); // start from Settings list
+
+      function renderEventNotifyTags() {
+        eventNotifyTags.innerHTML = "";
+
+        const unitToMinutes = {
+          minutes: 1,
+          hours: 60,
+          days: 60 * 24,
+          weeks: 60 * 24 * 7,
+          months: 60 * 24 * 30
+        };
+
+        const sorted = eventNotifications
+          .map((n, index) => ({
+            ...n,
+            index,
+            minutes: n.value * (unitToMinutes[n.unit] || 1)
+          }))
+          .sort((a, b) => a.minutes - b.minutes);
+
+        sorted.forEach((nWrapped) => {
+          const n = nWrapped;
+          const tag = document.createElement("span");
+          tag.className = "settings-tag";
+
+          const labelUnit =
+            n.value === 1 && n.unit.endsWith("s")
+              ? n.unit.slice(0, -1)
+              : n.unit;
+
+          tag.textContent = `${n.value} ${labelUnit}`;
+
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.textContent = "×";
+          btn.addEventListener("click", () => {
+            eventNotifications = eventNotifications.filter((_, i) => i !== n.index);
+            renderEventNotifyTags();
+          });
+
+          tag.appendChild(btn);
+          eventNotifyTags.appendChild(tag);
+        });
+      }
 
       function renderMilestones() {
         milestonePills.innerHTML = "";
@@ -636,6 +989,47 @@
         milestonesConfig.style.display = createMilestonesEl.checked ? "" : "none";
       });
 
+      if (eventNotifyAdd && eventNotifyNumber && eventNotifyUnit) {
+        eventNotifyAdd.addEventListener("click", () => {
+          const val = parseInt(eventNotifyNumber.value, 10);
+          const unit = eventNotifyUnit.value;
+          if (!isNaN(val) && val >= 0) {
+            if (eventNotifications.length >= 5) {
+              alert("You can only have up to 5 notifications per event.");
+              return;
+            }
+            const exists = eventNotifications.some((n) => n.value === val && n.unit === unit);
+            if (!exists) {
+              eventNotifications.push({ value: val, unit });
+              renderEventNotifyTags();
+            }
+            eventNotifyNumber.value = "";
+            eventNotifyUnit.value = "days";
+          }
+        });
+
+        eventNotifyNumber.addEventListener("keydown", (e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            const val = parseInt(eventNotifyNumber.value, 10);
+            const unit = eventNotifyUnit.value;
+            if (!isNaN(val) && val >= 0) {
+              if (eventNotifications.length >= 5) {
+                alert("You can only have up to 5 notifications per event.");
+                return;
+              }
+              const exists = eventNotifications.some((n) => n.value === val && n.unit === unit);
+              if (!exists) {
+                eventNotifications.push({ value: val, unit });
+                renderEventNotifyTags();
+              }
+              eventNotifyNumber.value = "";
+              eventNotifyUnit.value = "days";
+            }
+          }
+        });
+      }
+
       form.addEventListener("submit", async (e) => {
         e.preventDefault();
         createStatus.textContent = "";
@@ -654,6 +1048,7 @@
         const send_time = document.getElementById("sendtime").value.trim();
         const create_calendar = createCalendarEl.checked;
         const create_milestones = createMilestonesEl.checked;
+        const use_notifications = createNotificationsEl ? createNotificationsEl.checked : false;
         const title = titleInput.value.trim();
 
         const payload = {
@@ -667,6 +1062,7 @@
           create_milestones,
           milestone_days: milestoneDays,
           title: title || null,
+          notifications: use_notifications ? eventNotifications : [],
         };
 
         try {
@@ -686,13 +1082,18 @@
           } else {
             createOk.textContent = "Event created.";
             form.reset();
-            milestoneDays = [100, 500, 1000, 2500, 5000, 10000, 15000, 20000, 25000, 30000];
+            milestoneDays = defaultMilestoneDays.slice();
             renderMilestones();
             document.getElementById("eventtype").value = "birthday";
             document.getElementById("createcalendar").checked = googleConnected;
             document.getElementById("createmilestones").checked = true;
+            if (createNotificationsEl) {
+              createNotificationsEl.checked = googleConnected;
+            }
             updateTypeDependentFields();
             milestonesConfig.style.display = createMilestonesEl.checked ? "" : "none";
+            eventNotifications = defaultNotifications.slice();
+            renderEventNotifyTags();  
             loadUpcomingEvents();
           }
         } catch (err) {
@@ -703,6 +1104,7 @@
       milestonesConfig.style.display = createMilestonesEl.checked ? "" : "none";
       renderMilestones();
       updateTypeDependentFields();
+      renderEventNotifyTags();
     }
 
     async function loadUpcomingEvents() {
@@ -731,7 +1133,7 @@
         if (!Array.isArray(data) || data.length === 0) {
           const tr = document.createElement("tr");
           const td = document.createElement("td");
-          td.colSpan = 8;
+          td.colSpan = 9;
           td.textContent = "No upcoming events.";
           tr.appendChild(td);
           tbody.appendChild(tr);
@@ -754,6 +1156,13 @@
           const tdName = document.createElement("td");
           const names = evt.name2 ? `${evt.name1} & ${evt.name2}` : evt.name1;
           tdName.textContent = names;
+
+          const tdTitle = document.createElement('td');
+          tdTitle.textContent =
+            (evt.title || '').trim() &&
+            (evt.event_type === 'other_individual' || evt.event_type === 'other_couple')
+              ? (evt.title || '').trim()
+              : (evt.event_type || '').replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase());
 
           const tdBase = document.createElement("td");
 
@@ -840,6 +1249,7 @@
           tdActions.appendChild(editLink);
 
           tr.appendChild(tdName);
+          tr.appendChild(tdTitle);
           tr.appendChild(tdBase);
           tr.appendChild(tdNext);
           tr.appendChild(tdTz);
@@ -882,25 +1292,31 @@
       const picker = document.getElementById("theme-color-picker");
       if (!accessToken) {
         document.documentElement.style.setProperty("--page-bg", DEFAULT_THEME);
+        document.documentElement.style.setProperty("--font-color", DEFAULT_FONT);
         if (picker) picker.value = DEFAULT_THEME;
         return;
       }
       try {
         const me = await apiRequest("/api/me");
         const theme = me.theme_color || DEFAULT_THEME;
+        const font = me.font_color || DEFAULT_FONT;
         document.documentElement.style.setProperty("--page-bg", theme);
+        applyFontColor(font);
         if (picker) picker.value = theme;
       } catch (e) {
         document.documentElement.style.setProperty("--page-bg", DEFAULT_THEME);
+        applyFontColor(DEFAULT_FONT);
         if (picker) picker.value = DEFAULT_THEME;
       }
     }
 
     async function saveTheme(colorOrNull) {
       if (!accessToken) return;
-      const body = colorOrNull
-        ? { theme_color: colorOrNull }
-        : { theme_color: DEFAULT_THEME };
+      const currentFont = getComputedStyle(document.documentElement).getPropertyValue("--font-color").trim() || DEFAULT_FONT;
+      const body = {
+        theme_color: colorOrNull || DEFAULT_THEME,
+        font_color: currentFont
+      };
       try {
         await apiRequest("/api/me", {
           method: "PUT",
@@ -911,6 +1327,302 @@
       }
     }
 
+    function applyFontColor(color) {
+      document.documentElement.style.setProperty("--font-color", color);
+      document.body.style.color = color;
+    }
+
+    function initSettingsPopup() {
+      const backdrop = document.getElementById("settings-popup-backdrop");
+      const btnSettings = document.getElementById("btn-settings");
+      const googleStatusEl = document.getElementById("settings-google-status");
+      const googleBtn = document.getElementById("settings-google-btn");
+      const themeColorInput = document.getElementById("settings-theme-color");
+      const themeApplyBtn = document.getElementById("settings-theme-apply");
+      const fontColorInput = document.getElementById("settings-font-color");
+      const fontApplyBtn = document.getElementById("settings-font-apply");
+      if (themeColorInput) {
+        themeColorInput.addEventListener("change", () => {
+          const color = themeColorInput.value || DEFAULT_THEME;
+          document.documentElement.style.setProperty("--page-bg", color);
+          saveTheme(color);
+        });
+      }
+
+      if (fontColorInput) {
+        fontColorInput.addEventListener("change", () => {
+          const color = fontColorInput.value || DEFAULT_FONT;
+          applyFontColor(color);
+          // preserve background theme when saving
+          const currentTheme =
+            getComputedStyle(document.documentElement)
+              .getPropertyValue("--page-bg")
+              .trim() || DEFAULT_THEME;
+          saveTheme(currentTheme);
+        });
+      }
+      const msInput = document.getElementById("settings-milestone-input");
+      const msAddBtn = document.getElementById("settings-milestone-add");
+      const msTags = document.getElementById("settings-milestone-tags");
+      const notifyNumber = document.getElementById("settings-notify-number");
+      const notifyUnit = document.getElementById("settings-notify-unit");
+      const notifyAddBtn = document.getElementById("settings-notify-add");
+      const notifyTags = document.getElementById("settings-notify-tags");
+      const btnClose = document.getElementById("settings-close");
+      const btnReset = document.getElementById("settings-reset");
+      const btnChangePassword = document.getElementById("settings-change-password");
+      const btnLogout = document.getElementById("settings-logout");
+
+      if (btnChangePassword) {
+        btnChangePassword.addEventListener("click", () => {
+          window.location.href = "/change-password";
+        });
+      }
+
+      if (btnLogout) {
+        btnLogout.addEventListener("click", () => {
+          // clear token if you want to fully log out on client
+          localStorage.removeItem("access_token");
+          localStorage.removeItem("accesstoken");
+          window.location.href = "/login";
+        });
+      }
+
+      function renderSettingsMilestones() {
+        msTags.innerHTML = "";
+        settingsMilestoneDays.slice().sort((a, b) => a - b).forEach((d) => {
+          const tag = document.createElement("span");
+          tag.className = "settings-tag";
+          tag.textContent = d + "d";
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.textContent = "×";
+          btn.addEventListener("click", () => {
+            settingsMilestoneDays = settingsMilestoneDays.filter((x) => x !== d);
+            defaultMilestoneDays = settingsMilestoneDays.slice();
+            renderSettingsMilestones();
+          });
+          tag.appendChild(btn);
+          msTags.appendChild(tag);
+        });
+      }
+
+      function renderNotifyTags() {
+        notifyTags.innerHTML = "";
+
+        // sort by actual time offset (minutes)
+        const unitToMinutes = {
+          minutes: 1,
+          hours: 60,
+          days: 60 * 24,
+          weeks: 60 * 24 * 7,
+          months: 60 * 24 * 30
+        };
+
+        const sorted = defaultNotifications
+          .map((n, index) => ({
+            ...n,
+            index,
+            minutes: n.value * (unitToMinutes[n.unit] || 1)
+          }))
+          .sort((a, b) => a.minutes - b.minutes);
+
+        sorted.forEach((nWrapped) => {
+          const n = nWrapped;
+          const tag = document.createElement("span");
+          tag.className = "settings-tag";
+
+          const labelUnit =
+            n.value === 1 && n.unit.endsWith("s")
+              ? n.unit.slice(0, -1)
+              : n.unit;
+
+          tag.textContent = `${n.value} ${labelUnit}`;
+
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.textContent = "×";
+          btn.addEventListener("click", () => {
+            defaultNotifications = defaultNotifications.filter((_, i) => i !== n.index);
+            renderNotifyTags();
+          });
+
+          tag.appendChild(btn);
+          notifyTags.appendChild(tag);
+        });
+      }
+
+      function openPopup() {
+        if (!backdrop) return;
+        backdrop.style.display = "flex";
+        googleStatusEl.textContent = googleConnected ? "Currently connected" : "Currently disconnected";
+
+        const currentTheme = getComputedStyle(document.documentElement).getPropertyValue("--page-bg").trim() || DEFAULT_THEME;
+        themeColorInput.value = currentTheme && currentTheme.startsWith("#") ? currentTheme : DEFAULT_THEME;
+
+        const currentFont = getComputedStyle(document.documentElement).getPropertyValue("--font-color").trim() || DEFAULT_FONT;
+        if (currentFont.startsWith("#")) {
+          fontColorInput.value = currentFont;
+        } else {
+          fontColorInput.value = DEFAULT_FONT;
+        }
+
+        renderSettingsMilestones();
+        renderNotifyTags();
+        notifyNumber.value = "";
+        notifyUnit.value = "days";
+      }
+
+      function closePopup() {
+        if (backdrop) {
+          backdrop.style.display = "none";
+        }
+      }
+
+      if (btnSettings && backdrop) {
+        btnSettings.addEventListener("click", () => {
+          openPopup();
+        });
+      }
+
+      if (backdrop) {
+        backdrop.addEventListener("click", (e) => {
+          if (e.target === backdrop) {
+            closePopup();
+          }
+        });
+      }
+
+      if (btnClose) {
+        btnClose.addEventListener("click", () => {
+          closePopup();
+        });
+      }
+
+      if (googleBtn) {
+        googleBtn.addEventListener("click", async () => {
+          if (!accessToken) {
+            alert("You must be logged in.");
+            return;
+          }
+          try {
+            if (!googleConnected) {
+              const me = await apiRequest("/api/me");
+              window.location.href = "/google/login?user_id=" + me.id;
+            } else {
+              await apiRequest("/api/integrations/google/disconnect", { method: "POST" });
+              googleConnected = false;
+              googleStatusEl.textContent = "Currently disconnected";
+              fetchIntegrationsStatus();
+            }
+          } catch (err) {
+            alert(err.message);
+          }
+        });
+      }
+
+      if (themeApplyBtn && themeColorInput) {
+        themeApplyBtn.addEventListener("click", () => {
+          const color = themeColorInput.value || DEFAULT_THEME;
+          document.documentElement.style.setProperty("--page-bg", color);
+          saveTheme(color);
+        });
+      }
+
+      if (fontApplyBtn && fontColorInput) {
+        fontApplyBtn.addEventListener("click", () => {
+          const color = fontColorInput.value || DEFAULT_FONT;
+          applyFontColor(color);
+          saveTheme(getComputedStyle(document.documentElement).getPropertyValue("--page-bg").trim() || DEFAULT_THEME);
+        });
+      }
+
+      if (msAddBtn && msInput) {
+        msAddBtn.addEventListener("click", () => {
+          const val = parseInt(msInput.value, 10);
+          if (!isNaN(val) && val > 0 && !settingsMilestoneDays.includes(val)) {
+            settingsMilestoneDays.push(val);
+            defaultMilestoneDays = settingsMilestoneDays.slice();
+            renderSettingsMilestones();
+            msInput.value = "";
+          }
+        });
+
+        msInput.addEventListener("keydown", (e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            const val = parseInt(msInput.value, 10);
+            if (!isNaN(val) && val > 0 && !settingsMilestoneDays.includes(val)) {
+              settingsMilestoneDays.push(val);
+              defaultMilestoneDays = settingsMilestoneDays.slice();
+              renderSettingsMilestones();
+              msInput.value = "";
+            }
+          }
+        });
+      }
+
+      if (notifyAddBtn && notifyNumber && notifyUnit) {
+        notifyAddBtn.addEventListener("click", () => {
+          const val = parseInt(notifyNumber.value, 10);
+          const unit = notifyUnit.value;
+          if (!isNaN(val) && val >= 0) {
+            const exists = defaultNotifications.some((n) => n.value === val && n.unit === unit);
+            if (!exists) {
+              defaultNotifications.push({ value: val, unit });
+              renderNotifyTags();
+            }
+            notifyNumber.value = "";
+            notifyUnit.value = "days";
+          }
+        });
+
+        notifyNumber.addEventListener("keydown", (e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            const val = parseInt(notifyNumber.value, 10);
+            const unit = notifyUnit.value;
+            if (!isNaN(val) && val >= 0) {
+              const exists = defaultNotifications.some((n) => n.value === val && n.unit === unit);
+              if (!exists) {
+                defaultNotifications.push({ value: val, unit });
+                renderNotifyTags();
+              }
+              notifyNumber.value = "";
+              notifyUnit.value = "days";
+            }
+          }
+        });
+      }
+
+      if (btnReset) {
+        btnReset.addEventListener("click", async () => {
+          // reset theme and font
+          document.documentElement.style.setProperty("--page-bg", DEFAULT_THEME);
+          applyFontColor(DEFAULT_FONT);
+          await saveTheme(DEFAULT_THEME);
+
+          // also reset the pickers shown in the settings popup
+          if (themeColorInput) themeColorInput.value = DEFAULT_THEME;
+          if (fontColorInput) fontColorInput.value = DEFAULT_FONT;
+
+          // reset milestones
+          defaultMilestoneDays = DEFAULT_MILESTONE_DAYS.slice();
+          settingsMilestoneDays = defaultMilestoneDays.slice();
+          renderSettingsMilestones();
+
+          // reset notifications list
+          defaultNotifications = [
+            { value: 1, unit: "hours" },
+            { value: 2, unit: "hours" },
+            { value: 1, unit: "days" },
+            { value: 1, unit: "weeks" },
+            { value: 2, unit: "weeks" }
+          ];
+          renderNotifyTags();
+        });
+      }
+    }
 
     document.getElementById("google-connect-btn").addEventListener("click", async () => {
       try {
@@ -977,6 +1689,7 @@
       fetchIntegrationsStatus();
       setupCreateForm();
       loadUpcomingEvents();
+      initSettingsPopup();
     });
 
   </script>

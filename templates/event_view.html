@@ -167,8 +167,7 @@
       <a href="/events/all">All Events</a>
     </div>
     <div class="right">
-      <a href="/change-password">Change Password</a>
-      <a href="/login">Logout</a>
+      <button type="button" id="btn-settings" class="btn-link">Settings</button>
     </div>
   </header>
 
@@ -181,6 +180,7 @@
     <div class="panel">
       <h2>Base event</h2>
       <div id="base-fields"></div>
+      <div id="base-notifications"></div>
       <div class="actions-bar">
         <button id="btn-edit">Edit</button>
         <button id="btn-delete" class="danger">Delete</button>
@@ -331,6 +331,25 @@
         });
         baseFields.innerHTML = baseHtml;
 
+        const notifContainer = document.getElementById("base-notifications");
+        notifContainer.innerHTML = "";
+
+        if (Array.isArray(evt.notifications) && evt.notifications.length > 0) {
+          let notifHtml = `
+            <div class="field-row">
+              <span class="field-label">Notifications:</span>
+              <span>()
+          `;
+          notifHtml += evt.notifications
+            .map(n => `${n.value} ${n.unit}`)
+            .join(", ");
+          notifHtml += ") before</span></div>";
+          notifContainer.innerHTML = notifHtml;
+        } else {
+          // If you want to show nothing, leave this empty; otherwise a small note:
+          notifContainer.innerHTML = `<div class="field-row"><span class="field-label">Notifications:</span> None</div>`;
+        }
+
         // --- 2. Milestone Table Logic with Row Highlighting ---
         const milestones = evt.milestones || [];
         if (milestones.length > 0) {
@@ -401,8 +420,22 @@
       });
 
       document.getElementById("btn-back").addEventListener("click", () => {
+        // 1) If there is navigation history, go back
+        if (window.history.length > 1) {
+          window.history.back();
+          return;
+        }
+
+        // 2) If referrer is from this app, go there
+        if (document.referrer && document.referrer.indexOf(window.location.origin) === 0) {
+          window.location.href = document.referrer;
+          return;
+        }
+
+        // 3) Fallback: All Events
         window.location.href = "/events/all";
       });
+
 
       document.getElementById("btn-delete").addEventListener("click", () => {
         if (isMilestoneView) {

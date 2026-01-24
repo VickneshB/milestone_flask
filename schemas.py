@@ -21,6 +21,7 @@ class EventDTO:
     create_calendar: bool
     milestone_offset_days: Optional[int]
     title: Optional[str]
+    notifications: Optional[list]
     created_at: datetime
     updated_at: datetime
 
@@ -42,6 +43,7 @@ def event_to_dto(e: Event) -> EventDTO:
         create_calendar=e.create_calendar,
         milestone_offset_days=e.milestone_offset_days,
         title=e.title,
+        notifications=e.notifications or [],
         created_at=e.created_at,
         updated_at=e.updated_at,
     )
