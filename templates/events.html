@@ -675,7 +675,6 @@
       </div>
     </div>
 
-    <!-- Settings popup -->
     <div id="settings-popup-backdrop" class="settings-popup-backdrop">
       <div class="settings-popup">
         <h3>Settings</h3>
@@ -694,18 +693,16 @@
           <label>Theme colour</label>
           <div class="settings-inline">
             <input type="color" id="settings-theme-color">
-            <button type="button" id="settings-theme-apply" class="secondary">Apply</button>
           </div>
-          <div class="settings-small">Updates the background theme colour.</div>
+          <div class="settings-small">Updates the background theme colour immediately.</div>
         </div>
 
         <div class="settings-row">
           <label>Font colour</label>
           <div class="settings-inline">
             <input type="color" id="settings-font-color">
-            <button type="button" id="settings-font-apply" class="secondary">Apply</button>
           </div>
-          <div class="settings-small">Changes font colour on this page.</div>
+          <div class="settings-small">Changes font colour on this page immediately.</div>
         </div>
 
         <div class="settings-row">
@@ -732,7 +729,7 @@
             <button type="button" id="settings-notify-add" class="secondary">Add</button>
           </div>
           <div class="settings-tag-list" id="settings-notify-tags"></div>
-          <div class="settings-small">Multiple notifications can be set for a single event.</div>
+          <div class="settings-small">Multiple notifications can be set for a single event (Max 5).</div>
         </div>
 
         <div class="settings-footer">
@@ -763,20 +760,24 @@
     const accessToken = localStorage.getItem("access_token") || "";
     const DEFAULT_THEME = "#f5f5f5";
     const DEFAULT_FONT = "#111827";
-    const DEFAULT_MILESTONE_DAYS = [100, 500, 1000, 2500, 5000, 10000, 15000, 20000, 25000, 30000];
-
-    let googleConnected = false;
-
-    // settings defaults
-    let defaultMilestoneDays = DEFAULT_MILESTONE_DAYS.slice();
-    let settingsMilestoneDays = defaultMilestoneDays.slice();
-    let defaultNotifications = [
+    const HARDCODED_MILESTONES = [100, 500, 1000, 2500, 5000, 10000, 15000, 20000, 25000, 30000];
+    const HARDCODED_NOTIFICATIONS = [
       { value: 1, unit: "hours" },
       { value: 2, unit: "hours" },
       { value: 1, unit: "days" },
       { value: 1, unit: "weeks" },
       { value: 2, unit: "weeks" }
-    ]; // list of { value, unit }
+    ];
+
+    let googleConnected = false;
+
+    // These variables will hold the user's specific settings fetched from the backend
+    let settingsMilestoneDays = HARDCODED_MILESTONES.slice();
+    let defaultNotifications = HARDCODED_NOTIFICATIONS.slice();
+    
+    // Tracking current visual settings for inputs
+    let currentThemeColor = DEFAULT_THEME;
+    let currentFontColor = DEFAULT_FONT;
 
     async function fetchIntegrationsStatus() {
       const googleStatusText = document.getElementById("google-status-text");
@@ -868,8 +869,9 @@
       const eventNotifyAdd = document.getElementById("event-notify-add");
       const eventNotifyTags = document.getElementById("event-notify-tags");
 
-      let milestoneDays = defaultMilestoneDays.slice();
-      let eventNotifications = defaultNotifications.slice(); // start from Settings list
+      // Local variables for the form, initialized from the global settings
+      let formMilestoneDays = settingsMilestoneDays.slice();
+      let formNotifications = defaultNotifications.slice(); 
 
       function renderEventNotifyTags() {
         eventNotifyTags.innerHTML = "";
@@ -882,7 +884,7 @@
           months: 60 * 24 * 30
         };
 
-        const sorted = eventNotifications
+        const sorted = formNotifications
           .map((n, index) => ({
             ...n,
             index,
@@ -906,7 +908,7 @@
           btn.type = "button";
           btn.textContent = "×";
           btn.addEventListener("click", () => {
-            eventNotifications = eventNotifications.filter((_, i) => i !== n.index);
+            formNotifications = formNotifications.filter((_, i) => i !== n.index);
             renderEventNotifyTags();
           });
 
@@ -917,7 +919,7 @@
 
       function renderMilestones() {
         milestonePills.innerHTML = "";
-        milestoneDays.forEach((d) => {
+        formMilestoneDays.forEach((d) => {
           const pill = document.createElement("span");
           pill.className = "pill";
           pill.textContent = d + " days";
@@ -925,7 +927,7 @@
           btn.type = "button";
           btn.textContent = "×";
           btn.addEventListener("click", () => {
-            milestoneDays = milestoneDays.filter((x) => x !== d);
+            formMilestoneDays = formMilestoneDays.filter((x) => x !== d);
             renderMilestones();
           });
           pill.appendChild(btn);
@@ -937,9 +939,9 @@
         if (e.key === "Enter") {
           e.preventDefault();
           const val = parseInt(milestoneInput.value, 10);
-          if (!isNaN(val) && val > 0 && !milestoneDays.includes(val)) {
-            milestoneDays.push(val);
-            milestoneDays.sort((a, b) => a - b);
+          if (!isNaN(val) && val > 0 && !formMilestoneDays.includes(val)) {
+            formMilestoneDays.push(val);
+            formMilestoneDays.sort((a, b) => a - b);
             renderMilestones();
             milestoneInput.value = "";
           }
@@ -948,9 +950,9 @@
 
       btnAddMilestone.addEventListener("click", () => {
         const val = parseInt(milestoneInput.value, 10);
-        if (!isNaN(val) && val > 0 && !milestoneDays.includes(val)) {
-          milestoneDays.push(val);
-          milestoneDays.sort((a, b) => a - b);
+        if (!isNaN(val) && val > 0 && !formMilestoneDays.includes(val)) {
+          formMilestoneDays.push(val);
+          formMilestoneDays.sort((a, b) => a - b);
           renderMilestones();
           milestoneInput.value = "";
         }
@@ -994,13 +996,13 @@
           const val = parseInt(eventNotifyNumber.value, 10);
           const unit = eventNotifyUnit.value;
           if (!isNaN(val) && val >= 0) {
-            if (eventNotifications.length >= 5) {
+            if (formNotifications.length >= 5) {
               alert("You can only have up to 5 notifications per event.");
               return;
             }
-            const exists = eventNotifications.some((n) => n.value === val && n.unit === unit);
+            const exists = formNotifications.some((n) => n.value === val && n.unit === unit);
             if (!exists) {
-              eventNotifications.push({ value: val, unit });
+              formNotifications.push({ value: val, unit });
               renderEventNotifyTags();
             }
             eventNotifyNumber.value = "";
@@ -1014,13 +1016,13 @@
             const val = parseInt(eventNotifyNumber.value, 10);
             const unit = eventNotifyUnit.value;
             if (!isNaN(val) && val >= 0) {
-              if (eventNotifications.length >= 5) {
+              if (formNotifications.length >= 5) {
                 alert("You can only have up to 5 notifications per event.");
                 return;
               }
-              const exists = eventNotifications.some((n) => n.value === val && n.unit === unit);
+              const exists = formNotifications.some((n) => n.value === val && n.unit === unit);
               if (!exists) {
-                eventNotifications.push({ value: val, unit });
+                formNotifications.push({ value: val, unit });
                 renderEventNotifyTags();
               }
               eventNotifyNumber.value = "";
@@ -1060,9 +1062,9 @@
           send_time,
           create_calendar,
           create_milestones,
-          milestone_days: milestoneDays,
+          milestone_days: formMilestoneDays,
           title: title || null,
-          notifications: use_notifications ? eventNotifications : [],
+          notifications: use_notifications ? formNotifications : [],
         };
 
         try {
@@ -1082,7 +1084,8 @@
           } else {
             createOk.textContent = "Event created.";
             form.reset();
-            milestoneDays = defaultMilestoneDays.slice();
+            // Reset form lists to the global defaults
+            formMilestoneDays = settingsMilestoneDays.slice();
             renderMilestones();
             document.getElementById("eventtype").value = "birthday";
             document.getElementById("createcalendar").checked = googleConnected;
@@ -1092,7 +1095,7 @@
             }
             updateTypeDependentFields();
             milestonesConfig.style.display = createMilestonesEl.checked ? "" : "none";
-            eventNotifications = defaultNotifications.slice();
+            formNotifications = defaultNotifications.slice();
             renderEventNotifyTags();  
             loadUpcomingEvents();
           }
@@ -1105,6 +1108,14 @@
       renderMilestones();
       updateTypeDependentFields();
       renderEventNotifyTags();
+
+      // Expose a function to refresh the create form if settings change
+      window.refreshCreateFormDefaults = function() {
+          formMilestoneDays = settingsMilestoneDays.slice();
+          renderMilestones();
+          formNotifications = defaultNotifications.slice();
+          renderEventNotifyTags();
+      };
     }
 
     async function loadUpcomingEvents() {
@@ -1288,42 +1299,89 @@
       return data;
     }
 
-    async function loadTheme() {
+    async function loadUserSettings() {
       const picker = document.getElementById("theme-color-picker");
+      
       if (!accessToken) {
+        // Fallback to defaults if not logged in
         document.documentElement.style.setProperty("--page-bg", DEFAULT_THEME);
         document.documentElement.style.setProperty("--font-color", DEFAULT_FONT);
+        currentThemeColor = DEFAULT_THEME;
+        currentFontColor = DEFAULT_FONT;
         if (picker) picker.value = DEFAULT_THEME;
         return;
       }
+
       try {
+        // Fetch all user settings: theme, font, milestones, notifications
         const me = await apiRequest("/api/me");
+        
+        // 1. Colors
         const theme = me.theme_color || DEFAULT_THEME;
         const font = me.font_color || DEFAULT_FONT;
+        
+        // Apply CSS
         document.documentElement.style.setProperty("--page-bg", theme);
         applyFontColor(font);
+        
+        // Update tracking vars
+        currentThemeColor = theme;
+        currentFontColor = font;
         if (picker) picker.value = theme;
+
+        // 2. Milestones
+        if (Array.isArray(me.default_milestone_days)) {
+          settingsMilestoneDays = me.default_milestone_days.slice().sort((a,b) => a-b);
+        } else {
+          settingsMilestoneDays = HARDCODED_MILESTONES.slice();
+        }
+
+        // 3. Notifications
+        if (Array.isArray(me.default_notifications)) {
+          defaultNotifications = me.default_notifications.slice();
+        } else {
+          defaultNotifications = HARDCODED_NOTIFICATIONS.slice();
+        }
+
+        // 4. Update the Create Form defaults if the form is already rendered
+        if (window.refreshCreateFormDefaults) {
+           window.refreshCreateFormDefaults();
+        }
+
       } catch (e) {
+        console.error("Failed to load user settings", e);
         document.documentElement.style.setProperty("--page-bg", DEFAULT_THEME);
         applyFontColor(DEFAULT_FONT);
+        currentThemeColor = DEFAULT_THEME;
         if (picker) picker.value = DEFAULT_THEME;
       }
     }
 
-    async function saveTheme(colorOrNull) {
+    async function saveUserSettings(changes = {}) {
       if (!accessToken) return;
-      const currentFont = getComputedStyle(document.documentElement).getPropertyValue("--font-color").trim() || DEFAULT_FONT;
+      
+      // Merge current state with changes
       const body = {
-        theme_color: colorOrNull || DEFAULT_THEME,
-        font_color: currentFont
+        theme_color: changes.theme_color || currentThemeColor,
+        font_color: changes.font_color || currentFontColor,
+        default_milestone_days: changes.default_milestone_days || settingsMilestoneDays,
+        default_notifications: changes.default_notifications || defaultNotifications
       };
+
       try {
         await apiRequest("/api/me", {
           method: "PUT",
           body: JSON.stringify(body),
         });
+        
+        // Update local tracking vars on success
+        currentThemeColor = body.theme_color;
+        currentFontColor = body.font_color;
+        settingsMilestoneDays = body.default_milestone_days;
+        defaultNotifications = body.default_notifications;
+        
       } catch (e) {
-        alert("Failed to save theme color");
+        alert("Failed to save settings: " + e.message);
       }
     }
 
@@ -1337,37 +1395,23 @@
       const btnSettings = document.getElementById("btn-settings");
       const googleStatusEl = document.getElementById("settings-google-status");
       const googleBtn = document.getElementById("settings-google-btn");
+      
+      // Color Inputs
       const themeColorInput = document.getElementById("settings-theme-color");
-      const themeApplyBtn = document.getElementById("settings-theme-apply");
       const fontColorInput = document.getElementById("settings-font-color");
-      const fontApplyBtn = document.getElementById("settings-font-apply");
-      if (themeColorInput) {
-        themeColorInput.addEventListener("change", () => {
-          const color = themeColorInput.value || DEFAULT_THEME;
-          document.documentElement.style.setProperty("--page-bg", color);
-          saveTheme(color);
-        });
-      }
-
-      if (fontColorInput) {
-        fontColorInput.addEventListener("change", () => {
-          const color = fontColorInput.value || DEFAULT_FONT;
-          applyFontColor(color);
-          // preserve background theme when saving
-          const currentTheme =
-            getComputedStyle(document.documentElement)
-              .getPropertyValue("--page-bg")
-              .trim() || DEFAULT_THEME;
-          saveTheme(currentTheme);
-        });
-      }
+      
+      // Milestones Inputs
       const msInput = document.getElementById("settings-milestone-input");
       const msAddBtn = document.getElementById("settings-milestone-add");
       const msTags = document.getElementById("settings-milestone-tags");
+      
+      // Notifications Inputs
       const notifyNumber = document.getElementById("settings-notify-number");
       const notifyUnit = document.getElementById("settings-notify-unit");
       const notifyAddBtn = document.getElementById("settings-notify-add");
       const notifyTags = document.getElementById("settings-notify-tags");
+      
+      // Footer Buttons
       const btnClose = document.getElementById("settings-close");
       const btnReset = document.getElementById("settings-reset");
       const btnChangePassword = document.getElementById("settings-change-password");
@@ -1381,9 +1425,7 @@
 
       if (btnLogout) {
         btnLogout.addEventListener("click", () => {
-          // clear token if you want to fully log out on client
           localStorage.removeItem("access_token");
-          localStorage.removeItem("accesstoken");
           window.location.href = "/login";
         });
       }
@@ -1397,10 +1439,12 @@
           const btn = document.createElement("button");
           btn.type = "button";
           btn.textContent = "×";
-          btn.addEventListener("click", () => {
+          btn.addEventListener("click", async () => {
+            // Remove locally
             settingsMilestoneDays = settingsMilestoneDays.filter((x) => x !== d);
-            defaultMilestoneDays = settingsMilestoneDays.slice();
             renderSettingsMilestones();
+            // Save immediately
+            await saveUserSettings({ default_milestone_days: settingsMilestoneDays });
           });
           tag.appendChild(btn);
           msTags.appendChild(tag);
@@ -1410,7 +1454,6 @@
       function renderNotifyTags() {
         notifyTags.innerHTML = "";
 
-        // sort by actual time offset (minutes)
         const unitToMinutes = {
           minutes: 1,
           hours: 60,
@@ -1442,9 +1485,12 @@
           const btn = document.createElement("button");
           btn.type = "button";
           btn.textContent = "×";
-          btn.addEventListener("click", () => {
+          btn.addEventListener("click", async () => {
+            // Remove locally
             defaultNotifications = defaultNotifications.filter((_, i) => i !== n.index);
             renderNotifyTags();
+            // Save immediately
+            await saveUserSettings({ default_notifications: defaultNotifications });
           });
 
           tag.appendChild(btn);
@@ -1455,27 +1501,24 @@
       function openPopup() {
         if (!backdrop) return;
         backdrop.style.display = "flex";
-        googleStatusEl.textContent = googleConnected ? "Currently connected" : "Currently disconnected";
-
-        const currentTheme = getComputedStyle(document.documentElement).getPropertyValue("--page-bg").trim() || DEFAULT_THEME;
-        themeColorInput.value = currentTheme && currentTheme.startsWith("#") ? currentTheme : DEFAULT_THEME;
-
-        const currentFont = getComputedStyle(document.documentElement).getPropertyValue("--font-color").trim() || DEFAULT_FONT;
-        if (currentFont.startsWith("#")) {
-          fontColorInput.value = currentFont;
-        } else {
-          fontColorInput.value = DEFAULT_FONT;
-        }
+        
+        // Color Inputs: Use the tracked HEX values, not getComputedStyle
+        if (themeColorInput) themeColorInput.value = currentThemeColor;
+        if (fontColorInput) fontColorInput.value = currentFontColor;
 
         renderSettingsMilestones();
         renderNotifyTags();
+        
         notifyNumber.value = "";
         notifyUnit.value = "days";
+        msInput.value = "";
       }
 
       function closePopup() {
         if (backdrop) {
           backdrop.style.display = "none";
+          // When closing, update the create form in case defaults changed
+          if (window.refreshCreateFormDefaults) window.refreshCreateFormDefaults();
         }
       }
 
@@ -1512,7 +1555,7 @@
             } else {
               await apiRequest("/api/integrations/google/disconnect", { method: "POST" });
               googleConnected = false;
-              googleStatusEl.textContent = "Currently disconnected";
+              if (googleStatusEl) googleStatusEl.textContent = "Currently disconnected";
               fetchIntegrationsStatus();
             }
           } catch (err) {
@@ -1521,105 +1564,113 @@
         });
       }
 
-      if (themeApplyBtn && themeColorInput) {
-        themeApplyBtn.addEventListener("click", () => {
-          const color = themeColorInput.value || DEFAULT_THEME;
+      // --- Theme Color Logic (Immediate) ---
+      if (themeColorInput) {
+        // Visual update on drag
+        themeColorInput.addEventListener("input", (e) => {
+          const color = e.target.value;
           document.documentElement.style.setProperty("--page-bg", color);
-          saveTheme(color);
+          currentThemeColor = color; 
+        });
+        // Save on commit (click away/close picker)
+        themeColorInput.addEventListener("change", async (e) => {
+          await saveUserSettings({ theme_color: e.target.value });
         });
       }
 
-      if (fontApplyBtn && fontColorInput) {
-        fontApplyBtn.addEventListener("click", () => {
-          const color = fontColorInput.value || DEFAULT_FONT;
+      // --- Font Color Logic (Immediate) ---
+      if (fontColorInput) {
+        // Visual update on drag
+        fontColorInput.addEventListener("input", (e) => {
+          const color = e.target.value;
           applyFontColor(color);
-          saveTheme(getComputedStyle(document.documentElement).getPropertyValue("--page-bg").trim() || DEFAULT_THEME);
+          currentFontColor = color;
         });
+        // Save on commit (click away/close picker)
+        fontColorInput.addEventListener("change", async (e) => {
+          await saveUserSettings({ font_color: e.target.value });
+        });
+      }
+
+      // --- Milestones Logic ---
+      async function addMilestone() {
+        const val = parseInt(msInput.value, 10);
+        if (!isNaN(val) && val > 0 && !settingsMilestoneDays.includes(val)) {
+          settingsMilestoneDays.push(val);
+          renderSettingsMilestones();
+          msInput.value = "";
+          await saveUserSettings({ default_milestone_days: settingsMilestoneDays });
+        }
       }
 
       if (msAddBtn && msInput) {
-        msAddBtn.addEventListener("click", () => {
-          const val = parseInt(msInput.value, 10);
-          if (!isNaN(val) && val > 0 && !settingsMilestoneDays.includes(val)) {
-            settingsMilestoneDays.push(val);
-            defaultMilestoneDays = settingsMilestoneDays.slice();
-            renderSettingsMilestones();
-            msInput.value = "";
-          }
-        });
-
+        msAddBtn.addEventListener("click", addMilestone);
         msInput.addEventListener("keydown", (e) => {
           if (e.key === "Enter") {
             e.preventDefault();
-            const val = parseInt(msInput.value, 10);
-            if (!isNaN(val) && val > 0 && !settingsMilestoneDays.includes(val)) {
-              settingsMilestoneDays.push(val);
-              defaultMilestoneDays = settingsMilestoneDays.slice();
-              renderSettingsMilestones();
-              msInput.value = "";
-            }
+            addMilestone();
           }
         });
+      }
+
+      // --- Notifications Logic ---
+      async function addNotification() {
+        // Check Limit
+        if (defaultNotifications.length >= 5) {
+            alert("Maximum count is 5");
+            return;
+        }
+
+        const val = parseInt(notifyNumber.value, 10);
+        const unit = notifyUnit.value;
+        if (!isNaN(val) && val >= 0) {
+          const exists = defaultNotifications.some((n) => n.value === val && n.unit === unit);
+          if (!exists) {
+            defaultNotifications.push({ value: val, unit });
+            renderNotifyTags();
+            notifyNumber.value = "";
+            notifyUnit.value = "days";
+            await saveUserSettings({ default_notifications: defaultNotifications });
+          }
+        }
       }
 
       if (notifyAddBtn && notifyNumber && notifyUnit) {
-        notifyAddBtn.addEventListener("click", () => {
-          const val = parseInt(notifyNumber.value, 10);
-          const unit = notifyUnit.value;
-          if (!isNaN(val) && val >= 0) {
-            const exists = defaultNotifications.some((n) => n.value === val && n.unit === unit);
-            if (!exists) {
-              defaultNotifications.push({ value: val, unit });
-              renderNotifyTags();
-            }
-            notifyNumber.value = "";
-            notifyUnit.value = "days";
-          }
-        });
-
+        notifyAddBtn.addEventListener("click", addNotification);
         notifyNumber.addEventListener("keydown", (e) => {
           if (e.key === "Enter") {
             e.preventDefault();
-            const val = parseInt(notifyNumber.value, 10);
-            const unit = notifyUnit.value;
-            if (!isNaN(val) && val >= 0) {
-              const exists = defaultNotifications.some((n) => n.value === val && n.unit === unit);
-              if (!exists) {
-                defaultNotifications.push({ value: val, unit });
-                renderNotifyTags();
-              }
-              notifyNumber.value = "";
-              notifyUnit.value = "days";
-            }
+            addNotification();
           }
         });
       }
 
+      // --- Reset Logic ---
       if (btnReset) {
         btnReset.addEventListener("click", async () => {
-          // reset theme and font
+          // Reset UI CSS
           document.documentElement.style.setProperty("--page-bg", DEFAULT_THEME);
           applyFontColor(DEFAULT_FONT);
-          await saveTheme(DEFAULT_THEME);
+          
+          // Reset Variables
+          currentThemeColor = DEFAULT_THEME;
+          currentFontColor = DEFAULT_FONT;
+          settingsMilestoneDays = HARDCODED_MILESTONES.slice();
+          defaultNotifications = HARDCODED_NOTIFICATIONS.slice();
 
-          // also reset the pickers shown in the settings popup
+          // Reset Inputs in Modal
           if (themeColorInput) themeColorInput.value = DEFAULT_THEME;
           if (fontColorInput) fontColorInput.value = DEFAULT_FONT;
-
-          // reset milestones
-          defaultMilestoneDays = DEFAULT_MILESTONE_DAYS.slice();
-          settingsMilestoneDays = defaultMilestoneDays.slice();
           renderSettingsMilestones();
-
-          // reset notifications list
-          defaultNotifications = [
-            { value: 1, unit: "hours" },
-            { value: 2, unit: "hours" },
-            { value: 1, unit: "days" },
-            { value: 1, unit: "weeks" },
-            { value: 2, unit: "weeks" }
-          ];
           renderNotifyTags();
+
+          // Save to Backend
+          await saveUserSettings({
+            theme_color: DEFAULT_THEME,
+            font_color: DEFAULT_FONT,
+            default_milestone_days: HARDCODED_MILESTONES,
+            default_notifications: HARDCODED_NOTIFICATIONS
+          });
         });
       }
     }
@@ -1641,14 +1692,16 @@
 
     document.getElementById("btn-refresh-upcoming").addEventListener("click", loadUpcomingEvents);
 
-    document.addEventListener("DOMContentLoaded", () => {
+    document.addEventListener("DOMContentLoaded", async () => {
+      // These old handlers (btn-theme, theme-modal-backdrop) seem redundant 
+      // given the new Settings Popup logic, but keeping them as requested to not break flow.
       const btnTheme = document.getElementById("btn-theme");
       const backdrop = document.getElementById("theme-modal-backdrop");
       const picker = document.getElementById("theme-color-picker");
       const btnThemeClose = document.getElementById("btn-theme-close");
       const btnThemeReset = document.getElementById("btn-theme-reset");
 
-      loadTheme();
+      await loadUserSettings(); // Replaces loadTheme()
 
       if (btnTheme && backdrop) {
         btnTheme.addEventListener("click", () => {
@@ -1671,10 +1724,15 @@
       }
 
       if (picker) {
+        // Update picker to match loaded settings
+        picker.value = currentThemeColor;
+        
         picker.addEventListener("input", (e) => {
           const color = e.target.value;
           document.documentElement.style.setProperty("--page-bg", color);
-          saveTheme(color);
+          // Note: This specific modal doesn't have an "Apply" button logic for persistence in the original code,
+          // but we can hook it up if needed. For now, assuming persistence is handled via Settings Popup.
+          saveUserSettings({ theme_color: color }); 
         });
       }
 
@@ -1682,7 +1740,7 @@
         btnThemeReset.addEventListener("click", async () => {
           picker.value = DEFAULT_THEME;
           document.documentElement.style.setProperty("--page-bg", DEFAULT_THEME);
-          await saveTheme(DEFAULT_THEME);
+          await saveUserSettings({ theme_color: DEFAULT_THEME });
         });
       }
 
