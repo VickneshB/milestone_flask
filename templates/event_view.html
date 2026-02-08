@@ -338,8 +338,7 @@
           let notifHtml = `
             <div class="field-row">
               <span class="field-label">Notifications:</span>
-              <span>()
-          `;
+              <span>(`;
           notifHtml += evt.notifications
             .map(n => `${n.value} ${n.unit}`)
             .join(", ");
