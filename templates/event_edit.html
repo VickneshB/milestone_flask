@@ -666,6 +666,7 @@
           notificationsSection.style.display = createNotificationsEl.checked ? "" : "none";
         }
         document.getElementById("eventtype").value = evt.event_type;
+        document.getElementById("eventtype").dispatchEvent(new Event('change'));
         document.getElementById("name1").value = evt.name1 || "";
         document.getElementById("name2").value = evt.name2 || "";
         document.getElementById("basedate").value = evt.base_date;
