@@ -176,6 +176,32 @@
     #row-notifications {
       margin-top: 0.75rem;
     }
+
+    /* LOADING OVERLAY STYLES */
+    .loading-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(255, 255, 255, 0.7);
+      display: none; /* hidden by default */
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+      backdrop-filter: blur(2px);
+    }
+
+    .spinner {
+      border: 5px solid #e0e0e0;
+      border-top: 5px solid #333;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
   </style>
 </head>
 <body>
@@ -312,6 +338,10 @@
     </div>
   </main>
 
+  <div id="loading-overlay" class="loading-backdrop">
+    <div class="spinner"></div>
+  </div>
+
   <script>
     const accessToken = localStorage.getItem("access_token") || "";
     const eventId = {{ event_id|int }};
@@ -327,7 +357,7 @@
       { value: 1, unit: "days" },
       { value: 1, unit: "weeks" },
       { value: 2, unit: "weeks" }
-    ]; // list of { value, unit }
+    ]; 
 
     let milestoneDays = defaultMilestoneDays.slice();
 
@@ -367,7 +397,7 @@
       }
     }
 
-    let eventNotifications = defaultNotifications.slice(); // start from Settings list
+    let eventNotifications = defaultNotifications.slice(); 
     let eventNotifyTags = null;
     let createNotificationsEl = null;
 
@@ -439,6 +469,7 @@
       const editStatus = document.getElementById("edit-status");
       const editOk = document.getElementById("edit-ok");
       const btnCancel = document.getElementById("btn-cancel");
+      const loadingOverlay = document.getElementById("loading-overlay");
 
       createNotificationsEl = document.getElementById("createnotifications");
 
@@ -449,7 +480,6 @@
       const notificationsSection = document.getElementById("notifications-section");
 
       if (createNotificationsEl) {
-        // Initial visibility
         notificationsSection.style.display = createNotificationsEl.checked ? "" : "none";
 
         createNotificationsEl.addEventListener("change", () => {
@@ -459,7 +489,6 @@
             alert("Google Calendar is not connected. Please connect Google Calendar first.");
             return;
           }
-          // Toggle section when checkbox changes
           notificationsSection.style.display = createNotificationsEl.checked ? "" : "none";
         });
       }
@@ -539,22 +568,16 @@
       });
 
       btnCancel.addEventListener("click", () => {
-        // Prefer real browser back if there is history
         if (window.history.length > 1) {
           window.history.back();
           return;
         }
-
-        // Fallback: use referrer if it looks like one of your app pages
         if (document.referrer && document.referrer.indexOf(window.location.origin) === 0) {
           window.location.href = document.referrer;
           return;
         }
-
-        // Final fallback: All Events
         window.location.href = "/events/all";
       });
-
 
       if (eventNotifyAdd && eventNotifyNumber && eventNotifyUnit) {
         eventNotifyAdd.addEventListener("click", () => {
@@ -597,7 +620,6 @@
         });
       }
 
-
       form.addEventListener("submit", async (e) => {
         e.preventDefault();
         editStatus.textContent = "";
@@ -607,6 +629,9 @@
           editStatus.textContent = "You must be logged in.";
           return;
         }
+
+        // --- SHOW LOADING OVERLAY ---
+        loadingOverlay.style.display = "flex";
 
         const use_notifications = createNotificationsEl ? createNotificationsEl.checked : false;
 
@@ -635,6 +660,9 @@
           }, 800);
         } catch (err) {
           editStatus.textContent = err.message || "Error updating event.";
+        } finally {
+          // Hide overlay if it didn't redirect (e.g. error occurred)
+          loadingOverlay.style.display = "none";
         }
       });
 

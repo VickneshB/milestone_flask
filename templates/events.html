@@ -498,6 +498,32 @@
       background-color: #ffeb9c;
     }
 
+    /* LOADING OVERLAY STYLES */
+    .loading-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(255, 255, 255, 0.7);
+      display: none; /* hidden by default */
+      align-items: center;
+      justify-content: center;
+      z-index: 2000; /* higher than settings modal */
+      backdrop-filter: blur(2px);
+    }
+
+    .spinner {
+      border: 5px solid #e0e0e0;
+      border-top: 5px solid #333;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
   </style>
 </head>
 <body>
@@ -653,6 +679,7 @@
             <th>Send Time</th>
             <th>Days Since Base</th>
             <th>Days To Go</th>
+            <th>Milestone?</th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -755,6 +782,10 @@
 
   </main>
 
+  <div id="loading-overlay" class="loading-backdrop">
+    <div class="spinner"></div>
+  </div>
+
   <script>
     
     const accessToken = localStorage.getItem("access_token") || "";
@@ -847,6 +878,8 @@
       const btnAddMilestone = document.getElementById("btn-add-milestone");
       const createStatus = document.getElementById("create-status");
       const createOk = document.getElementById("create-ok");
+      
+      const loadingOverlay = document.getElementById("loading-overlay");
 
       const createNotificationsEl = document.getElementById("createnotifications");
 
@@ -1042,6 +1075,9 @@
           return;
         }
 
+        // --- SHOW LOADING OVERLAY ---
+        loadingOverlay.style.display = "flex";
+
         const event_type = eventTypeEl.value;
         const name1 = document.getElementById("name1").value.trim();
         const name2 = document.getElementById("name2").value.trim();
@@ -1101,6 +1137,9 @@
           }
         } catch (err) {
           createStatus.textContent = "Network error creating event.";
+        } finally {
+            // --- HIDE LOADING OVERLAY ---
+            loadingOverlay.style.display = "none";
         }
       });
 
@@ -1144,7 +1183,7 @@
         if (!Array.isArray(data) || data.length === 0) {
           const tr = document.createElement("tr");
           const td = document.createElement("td");
-          td.colSpan = 9;
+          td.colSpan = 10;
           td.textContent = "No upcoming events.";
           tr.appendChild(td);
           tbody.appendChild(tr);
@@ -1222,21 +1261,6 @@
           }
           tdDaysSince.textContent = daysSince;
 
-          // --- COLORING LOGIC 1: Text color for milestones ---
-          const mList = [100, 500, 1000, 2500, 5000, 10000, 15000, 20000, 25000, 30000];
-          if (mList.includes(daysSince)) {
-            tdDaysSince.style.color = "#0a7f3f";
-            tdDaysSince.style.fontWeight = "bold";
-          } else {
-            for (let m of mList) {
-              if (daysSince >= (m - 14) && daysSince < m) {
-                tdDaysSince.style.color = "orange";
-                tdDaysSince.style.fontWeight = "bold";
-                break;
-              }
-            }
-          }
-
           // --- COLORING LOGIC 2: Row background based on proximity ---
           if (daysToGo === 0) {
             tr.style.backgroundColor = "#c6efce"; // Light Green
@@ -1244,6 +1268,17 @@
           } else if (daysToGo > 0 && daysToGo < 15) {
             tr.style.backgroundColor = "#ffeb9c"; // Light Orange/Yellow
             tr.style.color = "#9c6500";           // Dark Orange Text
+          }
+
+          // --- New Column: Milestone? ---
+          const tdMilestone = document.createElement("td");
+          tdMilestone.style.textAlign = "center";
+          if (evt.milestone_offset_days && evt.milestone_offset_days > 0) {
+            tdMilestone.innerHTML = "&#10004;"; // Tick symbol
+            tdMilestone.style.color = "#0a7f3f";
+            tdMilestone.style.fontWeight = "bold";
+          } else {
+            tdMilestone.textContent = "";
           }
 
           const tdActions = document.createElement("td");
@@ -1267,6 +1302,7 @@
           tr.appendChild(tdTime);
           tr.appendChild(tdDaysSince);
           tr.appendChild(tdDaysToGo);
+          tr.appendChild(tdMilestone);
           tr.appendChild(tdActions);
 
           tbody.appendChild(tr);
